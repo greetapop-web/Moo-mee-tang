@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-14-pwa-3';
+var APP_VERSION = '2026-10-14-pwa-4';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -750,12 +750,20 @@ function renderHome() {
         '<div class="tx-amount ' + item.type + '">' + sign + escapeHtml(formatBaht(item.amount)) + '</div>' +
         '<button class="tx-delete" aria-label="ลบรายการ">✕</button>';
 
-      row.querySelector('.tx-delete').addEventListener('click', function () {
+      row.querySelector('.tx-delete').addEventListener('click', function (e) {
+        e.stopPropagation();
         if (item.pending) {
           showToast('รายการนี้ยังรอซิงก์อยู่ ลบได้หลังซิงก์ขึ้นชีตแล้ว');
           return;
         }
         confirmDeleteTx(item);
+      });
+      row.addEventListener('click', function () {
+        if (item.pending) {
+          showToast('รายการนี้ยังรอซิงก์อยู่ แก้ไขได้หลังซิงก์ขึ้นชีตแล้ว');
+          return;
+        }
+        openTxModal({ item: item, dateStr: day.key });
       });
 
       card.appendChild(row);
@@ -766,23 +774,30 @@ function renderHome() {
   });
 }
 
+/** ข้อมูลยืนยันตัวรายการ: เวลาบันทึก + ค่าเดิม — เซิร์ฟเวอร์ใช้หาแถวให้ถูกแม้แถวจะขยับไปแล้ว */
+function expectedOf(item) {
+  return { key: item.key || '', type: item.type, category: item.category, amount: item.amount };
+}
+
 function confirmDeleteTx(item) {
-  if (!confirm('ลบรายการนี้หรือไม่?')) return;
+  if (!confirm('ลบรายการนี้หรือไม่?')) return Promise.resolve(false);
   var month = currentMonth();
   if (!month) return;
   var key = monthKey(state.year, state.monthIndex);
 
-  performWrite(
+  return performWrite(
     'deleteTransaction',
-    [month.sheetName, item.rowIndex],
+    [month.sheetName, item.rowIndex, expectedOf(item)],
     function () { deleteTransactionLocal(key, item.rowIndex); },
     'ลบรายการ ' + item.category
-  ).then(function () { showToast('ลบรายการแล้ว'); });
+  ).then(function () { showToast('ลบรายการแล้ว'); return true; });
 }
 
 function renderAssets() {
   var data = state.assetsOverview || { total: 0, groups: [] };
   $('assetsTotal').textContent = formatBaht(data.total);
+  var grand = (data.groups || []).reduce(function (sum, g) { return sum + (Number(g.subtotal) || 0); }, 0);
+  $('assetsGrandTotal').textContent = formatBaht(grand);
 
   $('assetsByGroup').innerHTML = (data.groups || []).map(function (g) {
     var note = g.includeInTotal ? '' : ' (ไม่รวมยอด)';
@@ -1083,13 +1098,61 @@ function getCurrentTxType() {
 function openModal(id) { $(id).classList.add('open'); }
 function closeModal(id) { $(id).classList.remove('open'); }
 
-function openTxModal() {
-  $('txAmount').value = '';
-  $('txNote').value = '';
-  $('receiptStatus').textContent = '';
-  $('txDate').value = todayStr();
+var txEdit = null;   // null = เพิ่มรายการใหม่, ไม่ใช่ null = กำลังแก้ไขรายการเดิม
+
+/** สลับรายจ่าย/รายรับ: เปลี่ยนสีฟอร์ม และรายการหมวดหมู่ให้ตรงประเภท */
+function setTxType(type) {
+  document.querySelectorAll('#txTypeSegment .seg-btn').forEach(function (b) {
+    b.classList.toggle('active', b.dataset.type === type);
+  });
+  var modal = $('txModal');
+  modal.classList.toggle('type-expense', type !== 'income');
+  modal.classList.toggle('type-income', type === 'income');
   populateCategorySelect();
-  populateAccountSelect();
+}
+
+function selectOrAdd(sel, value, label) {
+  if (!value) return;
+  var exists = [].some.call(sel.options, function (o) { return o.value === value; });
+  if (!exists) {
+    var o = document.createElement('option');
+    o.value = value; o.textContent = label || value;
+    sel.appendChild(o);
+  }
+  sel.value = value;
+}
+
+/** edit = { item, dateStr } เพื่อแก้ไขรายการเดิม หรือไม่ส่งอะไรมาเพื่อเพิ่มรายการใหม่ */
+function openTxModal(edit) {
+  txEdit = (edit && edit.item) ? {
+    item: edit.item,
+    dateStr: edit.dateStr,
+    sheetName: (currentMonth() || {}).sheetName,
+    monthKey: monthKey(state.year, state.monthIndex)
+  } : null;
+
+  $('receiptStatus').textContent = '';
+  $('txModalTitle').textContent = txEdit ? 'แก้ไขรายการ' : 'เพิ่มรายการ';
+  $('saveTxBtn').textContent = txEdit ? 'บันทึกการแก้ไข' : 'บันทึก';
+  $('deleteTxBtn').hidden = !txEdit;
+
+  if (txEdit) {
+    var it = txEdit.item;
+    setTxType(it.type);
+    populateAccountSelect();
+    $('txDate').value = txEdit.dateStr;
+    $('txAmount').value = it.amount;
+    $('txNote').value = it.note || '';
+    // หมวด/บัญชีที่ถูกลบไปแล้วก็ยังแสดงค่าเดิมให้ ไม่เปลี่ยนเองโดยไม่รู้ตัว
+    selectOrAdd($('txCategory'), it.category, categoryIcon(it.type, it.category) + ' ' + it.category);
+    selectOrAdd($('txAccount'), it.account);
+  } else {
+    setTxType(state.lastTxType || 'expense');
+    populateAccountSelect();
+    $('txDate').value = todayStr();
+    $('txAmount').value = '';
+    $('txNote').value = '';
+  }
   openModal('txModal');
 }
 
@@ -1110,8 +1173,25 @@ function saveTransaction() {
 
   // เด้งไปเดือนของรายการที่เพิ่ง [บันทึก] เพื่อให้เห็นผลทันทีถ้าบันทึกย้อนเดือน
   var d = parseDateStr(tx.dateStr);
+
+  if (txEdit) {
+    var ed = txEdit;
+    state.year = d.getFullYear();
+    state.monthIndex = d.getMonth();
+    performWrite('updateTransaction', [ed.sheetName, ed.item.rowIndex, expectedOf(ed.item), tx], function () {
+      deleteTransactionLocal(ed.monthKey, ed.item.rowIndex);
+      addTransactionLocal(tx);
+    }, 'แก้ไข ' + ed.item.category).then(function () {
+      txEdit = null;
+      closeModal('txModal');
+      showToast(isOnline() ? 'แก้ไขรายการแล้ว' : 'แก้ไขในเครื่องแล้ว จะซิงก์ให้เมื่อมีเน็ต');
+    });
+    return;
+  }
+
   state.year = d.getFullYear();
   state.monthIndex = d.getMonth();
+  state.lastTxType = tx.type;
 
   performWrite('addTransaction', [tx], function () { addTransactionLocal(tx); },
     'บันทึก ' + tx.category
@@ -1201,7 +1281,7 @@ function saveAsset() {
     .then(function () {
       $('assetName').value = '';
       $('assetNewGroupName').value = '';
-      $('assetInitialBalance').value = '0';
+      $('assetInitialBalance').value = '';
       closeModal('assetModal');
       showToast('เพิ่มสินทรัพย์แล้ว');
     });
@@ -1368,18 +1448,20 @@ function bindEvents() {
   on('forceSyncBtn', 'click', function () { fullSync({ notify: true }); });
   on('resetConnectionBtn', 'click', resetConnection);
 
-  on('fabAdd', 'click', openTxModal);
+  on('fabAdd', 'click', function () { openTxModal(null); });
+  on('deleteTxBtn', 'click', function () {
+    if (!txEdit) return;
+    confirmDeleteTx(txEdit.item).then(function (done) {
+      if (done) { txEdit = null; closeModal('txModal'); }
+    });
+  });
   on('closeModalBtn', 'click', function () { closeModal('txModal'); });
   on('saveTxBtn', 'click', saveTransaction);
   on('receiptInput', 'change', handleReceiptUpload);
 
   on('txTypeSegment', 'click', function (e) {
     var btn = e.target.closest('.seg-btn');
-    if (!btn) return;
-    document.querySelectorAll('#txTypeSegment .seg-btn').forEach(function (b) {
-      b.classList.toggle('active', b === btn);
-    });
-    populateCategorySelect();
+    if (btn) setTxType(btn.dataset.type);
   });
 
   on('analysisSegment', 'click', function (e) {
