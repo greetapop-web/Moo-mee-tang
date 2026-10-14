@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <title>Moo Mee Tang</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- ทำให้เปิดจากไอคอนหน้าจอโฮมแล้วเต็มจอเหมือนแอปจริง (iOS) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="หมูมีตัง">
+  <meta name="theme-color" content="#0f3a4d">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+</head>
+<body>
+
+  <!-- หน้าเชื่อมต่อครั้งแรก: กรอกลิงก์ + โทเค็น แล้วเก็บไว้ในเครื่องนี้เท่านั้น (ไม่อยู่บน GitHub) -->
+  <div id="setupScreen" class="setup-screen" hidden>
+    <div class="setup-card">
+      <div class="setup-logo"><img src="icons/icon-192.png" alt="" width="64" height="64"></div>
+      <h1>เชื่อมต่อกับ Google Sheet</h1>
+      <p>กรอก 2 ค่าที่ได้จาก Apps Script ครั้งเดียว แอปจะจำไว้ในเครื่องนี้</p>
+
+      <label for="setupUrl">ลิงก์เว็บแอป (ลงท้ายด้วย /exec)</label>
+      <input type="url" id="setupUrl" placeholder="https://script.google.com/macros/s/.../exec"
+             autocomplete="off" autocapitalize="off" spellcheck="false">
+
+      <label for="setupToken">โทเค็นลับ (API TOKEN)</label>
+      <input type="text" id="setupToken" placeholder="วางโทเค็นที่คัดลอกมา"
+             autocomplete="off" autocapitalize="off" spellcheck="false">
+
+      <button id="setupSaveBtn" class="primary-btn">ทดสอบและเชื่อมต่อ</button>
+      <div id="setupMessage" class="setup-message" role="status"></div>
+
+      <p class="setup-note">
+        ลิงก์และโทเค็นถูกเก็บในเครื่องนี้เท่านั้น ไม่ถูกส่งขึ้น GitHub
+        ถ้าติดตั้งแอปไว้บนหน้าจอโฮม ให้กรอกในแอปที่เปิดจากไอคอน (iPhone แยกพื้นที่เก็บข้อมูลของแอปบนหน้าจอโฮมออกจาก Safari)
+      </p>
+    </div>
+  </div>
+
+  <div id="app" hidden>
+
+    <header class="app-header">
+      <div class="header-top">
+        <div class="app-title">🐷 Moo Mee Tang</div>
+        <button id="syncBtn" class="sync-btn" title="ซิงก์ข้อมูล">⟳</button>
+      </div>
+      <div id="syncStatus" class="sync-status">กำลังเริ่มระบบ...</div>
+      <div class="month-nav" id="monthNav">
+        <button id="prevMonthBtn" class="nav-arrow" aria-label="เดือนก่อนหน้า">‹</button>
+        <span id="monthLabel">…</span>
+        <button id="nextMonthBtn" class="nav-arrow" aria-label="เดือนถัดไป">›</button>
+      </div>
+    </header>
+
+    <main>
+
+      <!-- หน้ารวม (รายรับ-จ่ายรายวัน) -->
+      <section id="tab-home" class="tab-panel active">
+        <div class="summary-card">
+          <div class="balance-label">คงเหลือสุทธิเดือนนี้</div>
+          <div class="balance-amount" id="homeBalance">฿0</div>
+          <div class="summary-row">
+            <span>ค่าใช้จ่าย <b class="text-expense" id="homeExpense">฿0</b></span>
+            <span>รายได้ <b class="text-income" id="homeIncome">฿0</b></span>
+          </div>
+        </div>
+        <div id="dayList" class="day-list"></div>
+        <div id="homeEmpty" class="empty-state" hidden>ยังไม่มีรายการในเดือนนี้ กดปุ่ม + เพื่อเริ่มบันทึก</div>
+      </section>
+
+      <!-- หน้ารวมสินทรัพย์ -->
+      <section id="tab-assets" class="tab-panel">
+        <div class="summary-card">
+          <div class="balance-label">สินทรัพย์รวมทั้งหมด</div>
+          <div class="balance-amount text-gold" id="assetsTotal">฿0</div>
+          <div id="assetsByGroup" class="asset-type-row"></div>
+        </div>
+        <div id="assetList" class="asset-list"></div>
+        <div class="btn-row">
+          <button class="secondary-btn" id="addAssetBtn">+ เพิ่มสินทรัพย์</button>
+          <button class="secondary-btn" id="manageGroupsBtn">⚙ จัดการกลุ่ม</button>
+        </div>
+      </section>
+
+      <!-- หน้าวิเคราะห์ -->
+      <section id="tab-analysis" class="tab-panel">
+        <div class="segmented" id="analysisSegment">
+          <button class="seg-btn active" data-type="expense">ค่าใช้จ่าย</button>
+          <button class="seg-btn" data-type="income">รายได้</button>
+          <button class="seg-btn" data-type="all">ทั้งหมด</button>
+        </div>
+
+        <div id="analysisSummaryAll" class="summary-pair" hidden>
+          <div><span class="text-income">รายได้</span><b id="allIncomeTotal">฿0</b></div>
+          <div><span class="text-expense">ค่าใช้จ่าย</span><b id="allExpenseTotal">฿0</b></div>
+          <div><span>สุทธิ</span><b id="allNetTotal">฿0</b></div>
+        </div>
+
+        <div id="chartHost" class="chart-host"></div>
+        <div id="analysisList" class="analysis-list"></div>
+        <div id="analysisEmpty" class="empty-state" hidden>ยังไม่มีข้อมูลในเดือนนี้</div>
+      </section>
+
+      <!-- เพิ่มเติม -->
+      <section id="tab-more" class="tab-panel">
+        <h3>หมวดหมู่รายรับ</h3>
+        <div id="incomeCatList" class="chip-list"></div>
+        <div class="add-row">
+          <input type="text" id="newIncomeCatName" placeholder="ชื่อหมวดหมู่รายรับใหม่">
+          <button id="addIncomeCatBtn">เพิ่ม</button>
+        </div>
+
+        <h3>หมวดหมู่รายจ่าย</h3>
+        <div id="expenseCatList" class="chip-list"></div>
+        <div class="add-row">
+          <input type="text" id="newExpenseCatName" placeholder="ชื่อหมวดหมู่รายจ่ายใหม่">
+          <button id="addExpenseCatBtn">เพิ่ม</button>
+        </div>
+
+        <h3>การซิงก์ข้อมูล</h3>
+        <div id="syncDetail" class="about-text"></div>
+        <button class="secondary-btn" id="forceSyncBtn">ซิงก์ข้อมูลกับ Google Sheet เดี๋ยวนี้</button>
+        <button class="danger-btn" id="resetConnectionBtn">ตัดการเชื่อมต่อ / ใส่โทเค็นใหม่</button>
+        <p class="about-text">ใช้เมื่อเปลี่ยนโทเค็นด้วย resetApiToken() หรือจะเชื่อมกับชีตอื่น ข้อมูลที่เก็บไว้ในเครื่องนี้จะถูกล้าง (ข้อมูลในชีตไม่หาย)</p>
+
+        <h3>เกี่ยวกับแอปนี้</h3>
+        <p class="about-text">
+          แอปนี้เก็บข้อมูลไว้ในเครื่องด้วย จึงเปิดดูและบันทึกรายการได้แม้ไม่มีเน็ต
+          รายการที่บันทึกตอนออฟไลน์จะเข้าคิวไว้ แล้วส่งขึ้น Google Sheet ให้อัตโนมัติเมื่อกลับมามีเน็ต
+          ฐานข้อมูลจริงยังเป็น Google Sheet เหมือนเดิม เปิดดู/แก้ในชีตได้ตลอด
+        </p>
+        <p class="about-text">เวอร์ชันแอป: <b id="appVersion">-</b></p>
+      </section>
+
+    </main>
+
+    <button id="fabAdd" class="fab" aria-label="เพิ่มรายการ">+</button>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-tab="home"><span class="nav-icon">📖</span><span>หนังสือ</span></button>
+      <button class="nav-btn" data-tab="assets"><span class="nav-icon">👛</span><span>กระเป๋าเงิน</span></button>
+      <button class="nav-btn" data-tab="analysis"><span class="nav-icon">📊</span><span>การวิเคราะห์</span></button>
+      <button class="nav-btn" data-tab="more"><span class="nav-icon">⋯</span><span>เพิ่มเติม</span></button>
+    </nav>
+  </div>
+
+  <!-- Modal: เพิ่มรายการรับ-จ่าย -->
+  <div id="txModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span>เพิ่มรายการ</span>
+        <button id="closeModalBtn" class="icon-btn">✕</button>
+      </div>
+
+      <div class="segmented" id="txTypeSegment">
+        <button class="seg-btn active" data-type="expense">รายจ่าย</button>
+        <button class="seg-btn" data-type="income">รายรับ</button>
+      </div>
+
+      <label>จำนวนเงิน</label>
+      <input type="number" id="txAmount" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+
+      <label>วันที่</label>
+      <input type="date" id="txDate">
+
+      <label>หมวดหมู่</label>
+      <select id="txCategory"></select>
+
+      <label>บัญชี/สินทรัพย์</label>
+      <select id="txAccount"></select>
+
+      <label>บันทึกเพิ่มเติม</label>
+      <input type="text" id="txNote" placeholder="เช่น ข้าวเที่ยง">
+
+      <div class="receipt-row">
+        <label class="receipt-btn" for="receiptInput">📷 ถ่ายรูปใบเสร็จ (ต้องมีเน็ต)</label>
+        <input type="file" id="receiptInput" accept="image/*" capture="environment" hidden>
+      </div>
+      <div id="receiptStatus" class="receipt-status"></div>
+
+      <button id="saveTxBtn" class="primary-btn">บันทึก</button>
+    </div>
+  </div>
+
+  <!-- Modal: เพิ่มสินทรัพย์ -->
+  <div id="assetModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span>เพิ่มสินทรัพย์</span>
+        <button id="closeAssetModalBtn" class="icon-btn">✕</button>
+      </div>
+      <label>ชื่อสินทรัพย์</label>
+      <input type="text" id="assetName" placeholder="เช่น กองทุน S&amp;P500">
+      <label>กลุ่ม</label>
+      <select id="assetGroupSelect"></select>
+      <div id="newGroupNameRow" hidden>
+        <input type="text" id="assetNewGroupName" placeholder="ชื่อกลุ่มใหม่" style="margin-top:8px;">
+      </div>
+      <label>ยอดคงเหลือเริ่มต้น</label>
+      <input type="number" id="assetInitialBalance" value="0" step="0.01">
+      <button id="saveAssetBtn" class="primary-btn">บันทึก</button>
+    </div>
+  </div>
+
+  <!-- Modal: จัดการสินทรัพย์รายตัว -->
+  <div id="editBalanceModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="editBalanceTitle">จัดการ</span>
+        <button id="closeEditBalanceBtn" class="icon-btn">✕</button>
+      </div>
+      <label>ยอดคงเหลือใหม่</label>
+      <input type="number" id="editBalanceValue" step="0.01">
+      <button id="saveEditBalanceBtn" class="primary-btn">บันทึกยอด</button>
+
+      <label>ย้ายไปกลุ่ม</label>
+      <select id="editAssetGroupSelect"></select>
+      <button id="moveGroupBtn" class="secondary-btn" style="margin-top:10px;">ย้ายกลุ่ม</button>
+
+      <button id="deleteAssetBtn" class="danger-btn">ลบสินทรัพย์นี้</button>
+    </div>
+  </div>
+
+  <!-- Modal: จัดการกลุ่มสินทรัพย์ -->
+  <div id="groupsModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span>จัดการกลุ่มสินทรัพย์</span>
+        <button id="closeGroupsModalBtn" class="icon-btn">✕</button>
+      </div>
+      <p class="about-text">สลับสวิตช์ "รวมยอด" เพื่อเลือกว่ากลุ่มนั้นจะถูกนับเข้ายอดสินทรัพย์รวมทั้งหมดหรือไม่ ใช้ปุ่ม ▲▼ เพื่อเรียงลำดับกลุ่ม</p>
+      <div id="groupsManageList" class="groups-manage-list"></div>
+      <div class="add-row" style="margin-top:14px;">
+        <input type="text" id="newGroupName" placeholder="ชื่อกลุ่มใหม่">
+        <button id="addGroupBtn">เพิ่ม</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
