@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-14-pwa-6';
+var APP_VERSION = '2026-10-14-pwa-7';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -2119,8 +2119,22 @@ function init() {
 // ลงทะเบียน service worker เพื่อให้เปิดแอปได้ตอนไม่มีเน็ต
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('service-worker.js')
+    var hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' })
+      .then(function (reg) {
+        // ตรวจหาเวอร์ชันใหม่หลังเปิดแอปสักครู่ และทุกครั้งที่สลับกลับมาที่แอป
+        // (แอปบนหน้าจอโฮมของ iPhone มักเปิดต่อจากเดิม ไม่ได้โหลดหน้าใหม่ จึงต้องสั่งตรวจเอง)
+        var check = function () { reg.update().catch(function () { /* ออฟไลน์ ไม่เป็นไร */ }); };
+        setTimeout(check, 3000);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+      })
       .catch(function (err) { console.warn('service worker registration failed', err); });
+    // มีเวอร์ชันใหม่ติดตั้งเสร็จ → โหลดหน้าใหม่ 1 ครั้งให้เห็นของใหม่ทันที ไม่ต้องปิด-เปิดแอปเอง
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!hadController || window.__mmtReloaded) return;
+      window.__mmtReloaded = true;
+      location.reload();
+    });
   });
 }
 

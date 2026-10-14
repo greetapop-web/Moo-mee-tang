@@ -9,7 +9,7 @@
  */
 
 // เปลี่ยนเลขเวอร์ชันนี้ทุกครั้งที่แก้ไฟล์หน้าตาแอป เพื่อบังคับให้เครื่องโหลดของใหม่
-const CACHE_NAME = 'moo-mee-tang-v6';
+const CACHE_NAME = 'moo-mee-tang-v7';
 
 const APP_SHELL = [
   './',
@@ -28,7 +28,9 @@ const APP_SHELL = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
+      // cache: 'reload' = ข้ามแคชของเบราว์เซอร์ ดึงจากเซิร์ฟเวอร์จริงเสมอ
+      // (GitHub Pages ให้มือถือเก็บสำเนาไฟล์ได้ 10 นาที ถ้าไม่ข้าม จะได้ไฟล์เก่ามาใส่แคชเวอร์ชันใหม่)
+      .then((cache) => cache.addAll(APP_SHELL.map((url) => new Request(url, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });
@@ -54,7 +56,7 @@ self.addEventListener('fetch', (event) => {
     caches.match(req).then((cached) => {
       if (cached) {
         // มีในเครื่องแล้ว — ใช้เลยเพื่อความเร็ว แล้วค่อยแอบอัปเดตไว้ใช้รอบหน้า
-        fetch(req)
+        fetch(req, { cache: 'no-cache' })
           .then((res) => {
             if (res && res.ok) {
               caches.open(CACHE_NAME).then((cache) => cache.put(req, res.clone()));
