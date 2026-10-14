@@ -1,21 +1,68 @@
 /* style.css — ธีมมืดของ Moo Mee Tang (ยกมาจากเวอร์ชันเว็บเดิม + ส่วนที่เพิ่มสำหรับสถานะออฟไลน์/ซิงก์) */
 
 :root{
-  --bg-page:#121317;
-  --bg-card:#1c1e24;
-  --bg-card-alt:#22242c;
-  --header-start:#0f3a4d;
-  --header-end:#16606e;
-  --text-primary:#f2f3f5;
-  --text-secondary:#9aa1ab;
-  --green:#5fd68a;
-  --red:#ff7a7a;
-  --gold:#f2c14e;
-  --accent:#4fb3d9;
-  --border:#2a2d34;
-  --radius-lg:20px;
-  --radius-md:14px;
-  --radius-sm:10px;
+  --radius-lg:20px; --radius-md:14px; --radius-sm:10px;
+  /* ธีมเริ่มต้น: ทะเลยามค่ำ */
+  --bg-page:#121317; --bg-card:#1c1e24; --bg-card-alt:#22242c; --border:#2a2d34;
+  --header-start:#0f3a4d; --header-end:#16606e; --header-text:#ffffff;
+  --text-primary:#f2f3f5; --text-secondary:#9aa1ab;
+  --green:#5fd68a; --red:#ff7a7a; --gold:#f2c14e; --on-gold:#1a1300;
+  --accent:#4fb3d9; --on-accent:#0b1116;
+  --toast-bg:#2a2d34; --toast-text:#f2f3f5; --shadow:rgba(0,0,0,0.45); --nav-active:var(--gold);
+  color-scheme:dark;
+}
+/* หมูชมพู (สว่าง) — เข้ากับไอคอนแอป */
+:root[data-theme="pink"]{
+  --bg-page:#fff6f3; --bg-card:#ffffff; --bg-card-alt:#fdebe7; --border:#f3d6d0;
+  --header-start:#f2789a; --header-end:#e2557d; --header-text:#ffffff;
+  --text-primary:#3a2228; --text-secondary:#8a6b72;
+  --green:#2e9e5b; --red:#d9434f; --gold:#f5b83d; --on-gold:#3a2400;
+  --accent:#e2557d; --on-accent:#ffffff;
+  --toast-bg:#3a2228; --toast-text:#ffffff; --shadow:rgba(226,85,125,0.25);
+  --nav-active:var(--accent);
+  color-scheme:light;
+}
+/* ใบเตย (สว่าง เขียว) */
+:root[data-theme="mint"]{
+  --bg-page:#f2f8f3; --bg-card:#ffffff; --bg-card-alt:#e6f2e9; --border:#cfe5d5;
+  --header-start:#4caf65; --header-end:#2e8b57; --header-text:#ffffff;
+  --text-primary:#1d3325; --text-secondary:#5f7a67;
+  --green:#2b8a4e; --red:#cf4446; --gold:#e8a92c; --on-gold:#2e2000;
+  --accent:#2e8b57; --on-accent:#ffffff;
+  --toast-bg:#1d3325; --toast-text:#ffffff; --shadow:rgba(46,139,87,0.22);
+  --nav-active:var(--accent);
+  color-scheme:light;
+}
+/* ท้องฟ้า (สว่าง ฟ้า) */
+:root[data-theme="sky"]{
+  --bg-page:#f2f6fc; --bg-card:#ffffff; --bg-card-alt:#e5edf9; --border:#d2ddef;
+  --header-start:#4a8de0; --header-end:#2a62b8; --header-text:#ffffff;
+  --text-primary:#1b2a40; --text-secondary:#5d6f8a;
+  --green:#21885a; --red:#d2414c; --gold:#eaa82a; --on-gold:#2e2000;
+  --accent:#2f6fd0; --on-accent:#ffffff;
+  --toast-bg:#1b2a40; --toast-text:#ffffff; --shadow:rgba(42,98,184,0.22);
+  --nav-active:var(--accent);
+  color-scheme:light;
+}
+/* ม่วงราตรี (มืด) */
+:root[data-theme="violet"]{
+  --bg-page:#14111c; --bg-card:#1e1929; --bg-card-alt:#272035; --border:#342b45;
+  --header-start:#3b2466; --header-end:#5d3ca3; --header-text:#ffffff;
+  --text-primary:#f1edf9; --text-secondary:#a59cba;
+  --green:#6fdc9a; --red:#ff8a8a; --gold:#f5c95a; --on-gold:#1f1600;
+  --accent:#a98bf5; --on-accent:#140d24;
+  --toast-bg:#342b45; --toast-text:#f1edf9; --shadow:rgba(0,0,0,0.5);
+  color-scheme:dark;
+}
+/* ดำสนิท (ประหยัดแบต จอ OLED) */
+:root[data-theme="black"]{
+  --bg-page:#000000; --bg-card:#111113; --bg-card-alt:#1a1a1d; --border:#26262b;
+  --header-start:#141416; --header-end:#1f1f23; --header-text:#ffffff;
+  --text-primary:#f4f4f5; --text-secondary:#9a9aa3;
+  --green:#5fd68a; --red:#ff7a7a; --gold:#f2c14e; --on-gold:#1a1300;
+  --accent:#f2c14e; --on-accent:#1a1300;
+  --toast-bg:#26262b; --toast-text:#f4f4f5; --shadow:rgba(0,0,0,0.6);
+  color-scheme:dark;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;background:var(--bg-page);color:var(--text-primary);
@@ -43,12 +90,13 @@ html,body{margin:0;padding:0;background:var(--bg-page);color:var(--text-primary)
 
 /* ===== ส่วนหัว ===== */
 .app-header{
+  color:var(--header-text);
   background:linear-gradient(160deg,var(--header-start),var(--header-end));
   padding:calc(14px + env(safe-area-inset-top)) 18px 14px;position:sticky;top:0;z-index:10;
 }
 .header-top{display:flex;align-items:center;justify-content:space-between;}
 .app-title{font-size:20px;font-weight:700;}
-.sync-btn{background:rgba(255,255,255,0.12);border:none;color:var(--text-primary);width:34px;height:34px;
+.sync-btn{background:rgba(255,255,255,0.16);border:none;color:inherit;width:34px;height:34px;
   border-radius:50%;font-size:17px;cursor:pointer;line-height:1;}
 .sync-btn.spinning{animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -61,7 +109,7 @@ html,body{margin:0;padding:0;background:var(--bg-page);color:var(--text-primary)
 
 .month-nav{display:flex;align-items:center;justify-content:space-between;
   background:rgba(255,255,255,0.08);border-radius:999px;padding:6px 14px;}
-.nav-arrow{background:none;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;padding:2px 10px;}
+.nav-arrow{background:none;border:none;color:inherit;font-size:20px;cursor:pointer;padding:2px 10px;}
 #monthLabel{font-weight:600;font-size:15px;}
 
 main{padding:16px 16px 110px;}
@@ -148,7 +196,7 @@ main{padding:16px 16px 110px;}
 .segmented{display:flex;background:var(--bg-card-alt);border-radius:999px;padding:4px;margin-bottom:16px;}
 .seg-btn{flex:1;background:none;border:none;color:var(--text-secondary);padding:9px;
   border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;}
-.seg-btn.active{background:var(--accent);color:#0b1116;}
+.seg-btn.active{background:var(--accent);color:var(--on-accent);}
 
 /* ===== กราฟ (วาดด้วย SVG เอง ไม่ต้องพึ่งไลบรารีภายนอก จึงใช้งานออฟไลน์ได้ 100%) ===== */
 .chart-host{display:flex;justify-content:center;margin-bottom:20px;}
@@ -178,22 +226,24 @@ h3{font-size:14px;color:var(--text-secondary);margin:18px 0 10px;font-weight:600
 .add-row{display:flex;gap:8px;}
 .add-row input{flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);
   padding:10px;color:var(--text-primary);font-size:16px;}
-.add-row button{background:var(--accent);border:none;color:#0b1116;font-weight:700;padding:0 16px;
+.add-row button{background:var(--accent);border:none;color:var(--on-accent);font-weight:700;padding:0 16px;
   border-radius:var(--radius-sm);cursor:pointer;}
 .about-text{color:var(--text-secondary);font-size:13px;line-height:1.7;}
 
 /* ===== ปุ่มลอย + แถบล่าง ===== */
-.fab{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));right:calc(50% - 240px + 20px);
-  width:56px;height:56px;border-radius:50%;
-  background:var(--gold);color:#1a1300;border:none;font-size:28px;line-height:1;
-  box-shadow:0 6px 16px rgba(0,0,0,0.4);cursor:pointer;z-index:20;}
-@media (max-width:480px){.fab{right:20px;}}
+/* ปุ่ม + อยู่กลางแถบล่าง ระหว่าง "กระเป๋าเงิน" กับ "การวิเคราะห์" */
+.nav-add-slot{flex:1;display:flex;justify-content:center;align-items:flex-start;}
+.nav-add{width:58px;height:58px;border-radius:50%;margin-top:-26px;
+  background:var(--gold);color:var(--on-gold);border:4px solid var(--bg-card);
+  font-size:30px;line-height:1;font-weight:500;cursor:pointer;
+  box-shadow:0 6px 16px var(--shadow);}
+.nav-add:active{transform:scale(.94);}
 
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:var(--bg-card);
   border-top:1px solid var(--border);display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:15;}
 .nav-btn{flex:1;background:none;border:none;color:var(--text-secondary);display:flex;flex-direction:column;
   align-items:center;gap:3px;font-size:11px;cursor:pointer;padding:4px 0;}
-.nav-btn.active{color:var(--gold);}
+.nav-btn.active{color:var(--nav-active);}
 .nav-icon{font-size:19px;}
 
 /* ===== Modal ===== */
@@ -209,7 +259,7 @@ h3{font-size:14px;color:var(--text-secondary);margin:18px 0 10px;font-weight:600
 /* ขนาดอย่างน้อย 16px เพื่อไม่ให้ Safari บน iPhone ซูมหน้าจอเองตอนกดพิมพ์ */
 .modal input,.modal select{width:100%;background:var(--bg-card-alt);border:1px solid var(--border);
   border-radius:var(--radius-sm);padding:12px;color:var(--text-primary);font-size:16px;}
-.primary-btn{width:100%;background:var(--accent);border:none;color:#0b1116;font-weight:700;
+.primary-btn{width:100%;background:var(--accent);border:none;color:var(--on-accent);font-weight:700;
   padding:13px;border-radius:var(--radius-md);margin-top:18px;font-size:15px;cursor:pointer;}
 .primary-btn:disabled{opacity:.6;}
 .danger-btn{width:100%;background:none;border:1px solid var(--red);color:var(--red);font-weight:600;
@@ -222,7 +272,41 @@ h3{font-size:14px;color:var(--text-secondary);margin:18px 0 10px;font-weight:600
 .empty-state{text-align:center;color:var(--text-secondary);padding:40px 20px;font-size:14px;}
 
 /* วางเหนือปุ่ม + เสมอ ไม่ให้ข้อความถูกปุ่มบัง */
-.toast{position:fixed;bottom:calc(152px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);
-  background:#2a2d34;color:var(--text-primary);padding:10px 18px;border-radius:999px;font-size:13px;
+.toast{position:fixed;bottom:calc(104px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--toast-bg);color:var(--toast-text);padding:10px 18px;border-radius:999px;font-size:13px;
   opacity:0;pointer-events:none;transition:all .25s;z-index:50;max-width:85%;text-align:center;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ===== หมวดหมู่: ไทล์ที่แตะแก้ไขได้ ===== */
+.h3-hint{font-weight:400;font-size:12px;color:var(--text-secondary);margin-left:6px;}
+.cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:6px;}
+.cat-tile{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);
+  padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+  color:var(--text-primary);font:inherit;min-width:0;}
+.cat-tile .cat-name{font-size:12px;line-height:1.3;text-align:center;width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px;}
+.cat-tile.add{border-style:dashed;color:var(--text-secondary);}
+.cat-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;background:var(--bg-card-alt);}
+.cat-icon.big{width:64px;height:64px;border-radius:18px;font-size:34px;flex-shrink:0;}
+.cat-edit-top{display:flex;gap:14px;align-items:flex-end;}
+.cat-edit-top label{margin-top:0 !important;}
+
+/* ===== ตัวเลือกไอคอน ===== */
+.icon-picker{max-height:34vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-md);
+  padding:6px 10px 10px;background:var(--bg-card-alt);}
+.icon-group-title{font-size:12px;color:var(--text-secondary);margin:10px 2px 6px;}
+.icon-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+.icon-opt{aspect-ratio:1;border:2px solid transparent;border-radius:10px;background:var(--bg-card);
+  font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+.icon-opt.selected{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);}
+
+/* ===== ธีม ===== */
+.theme-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px;}
+.theme-opt{border:2px solid var(--border);border-radius:var(--radius-md);padding:0;overflow:hidden;cursor:pointer;
+  background:var(--bg-card);font:inherit;color:var(--text-primary);text-align:left;}
+.theme-opt.selected{border-color:var(--accent);}
+.theme-swatch{height:46px;display:flex;align-items:flex-end;gap:4px;padding:6px;}
+.theme-swatch i{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.7);}
+.theme-name{font-size:12px;padding:6px 8px 8px;display:flex;justify-content:space-between;}
+.cat-note{font-size:12px;color:var(--accent);margin:8px 0 0;line-height:1.5;}

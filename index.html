@@ -109,19 +109,14 @@
 
       <!-- เพิ่มเติม -->
       <section id="tab-more" class="tab-panel">
-        <h3>หมวดหมู่รายรับ</h3>
-        <div id="incomeCatList" class="chip-list"></div>
-        <div class="add-row">
-          <input type="text" id="newIncomeCatName" placeholder="ชื่อหมวดหมู่รายรับใหม่">
-          <button id="addIncomeCatBtn">เพิ่ม</button>
-        </div>
+        <h3>หมวดหมู่รายรับ <span class="h3-hint">แตะเพื่อแก้ไข</span></h3>
+        <div id="incomeCatList" class="cat-grid"></div>
 
-        <h3>หมวดหมู่รายจ่าย</h3>
-        <div id="expenseCatList" class="chip-list"></div>
-        <div class="add-row">
-          <input type="text" id="newExpenseCatName" placeholder="ชื่อหมวดหมู่รายจ่ายใหม่">
-          <button id="addExpenseCatBtn">เพิ่ม</button>
-        </div>
+        <h3>หมวดหมู่รายจ่าย <span class="h3-hint">แตะเพื่อแก้ไข</span></h3>
+        <div id="expenseCatList" class="cat-grid"></div>
+
+        <h3>ธีมสี <span class="h3-hint">ตั้งค่าเฉพาะเครื่องนี้</span></h3>
+        <div id="themeList" class="theme-list"></div>
 
         <h3>การซิงก์ข้อมูล</h3>
         <div id="syncDetail" class="about-text"></div>
@@ -140,11 +135,12 @@
 
     </main>
 
-    <button id="fabAdd" class="fab" aria-label="เพิ่มรายการ">+</button>
-
     <nav class="bottom-nav">
       <button class="nav-btn active" data-tab="home"><span class="nav-icon">📖</span><span>หนังสือ</span></button>
       <button class="nav-btn" data-tab="assets"><span class="nav-icon">👛</span><span>กระเป๋าเงิน</span></button>
+      <div class="nav-add-slot">
+        <button id="fabAdd" class="nav-add" aria-label="เพิ่มรายการ">+</button>
+      </div>
       <button class="nav-btn" data-tab="analysis"><span class="nav-icon">📊</span><span>การวิเคราะห์</span></button>
       <button class="nav-btn" data-tab="more"><span class="nav-icon">⋯</span><span>เพิ่มเติม</span></button>
     </nav>
@@ -240,6 +236,31 @@
         <input type="text" id="newGroupName" placeholder="ชื่อกลุ่มใหม่">
         <button id="addGroupBtn">เพิ่ม</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal: เพิ่ม/แก้ไขหมวดหมู่ -->
+  <div id="categoryModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="categoryModalTitle">แก้ไขหมวดหมู่</span>
+        <button id="closeCategoryModalBtn" class="icon-btn" aria-label="ปิด">✕</button>
+      </div>
+
+      <div class="cat-edit-top">
+        <div id="categoryIconPreview" class="cat-icon big">🧾</div>
+        <div style="flex:1;">
+          <label for="categoryNameInput">ชื่อหมวดหมู่</label>
+          <input type="text" id="categoryNameInput" placeholder="เช่น ค่ากาแฟ">
+        </div>
+      </div>
+
+      <p id="categoryRenameNote" class="cat-note" hidden>เปลี่ยนชื่อแล้ว รายการเก่าทุกเดือนที่ใช้ชื่อเดิมจะถูกเปลี่ยนชื่อตามให้อัตโนมัติ</p>
+      <label>เลือกไอคอน</label>
+      <div id="iconPicker" class="icon-picker"></div>
+
+      <button id="saveCategoryBtn" class="primary-btn">บันทึก</button>
+      <button id="deleteCategoryBtn" class="danger-btn">ลบหมวดหมู่นี้</button>
     </div>
   </div>
 

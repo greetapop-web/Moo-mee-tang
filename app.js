@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-14-pwa-2';
+var APP_VERSION = '2026-10-14-pwa-3';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -57,6 +57,57 @@ var THAI_MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.
 var THAI_MONTHS_FULL = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
   'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 var THAI_DAYS_SHORT = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+
+// ===================== ธีมสี (เก็บเฉพาะในเครื่องนี้) =====================
+
+var THEMES = [
+  { id: 'teal',   name: 'ทะเลยามค่ำ', dark: true,  bar: '#0f3a4d', dots: ['#121317', '#16606e', '#f2c14e'] },
+  { id: 'pink',   name: 'หมูชมพู',    dark: false, bar: '#e2557d', dots: ['#fff6f3', '#f2789a', '#2e9e5b'] },
+  { id: 'mint',   name: 'ใบเตย',      dark: false, bar: '#2e8b57', dots: ['#f2f8f3', '#4caf65', '#e8a92c'] },
+  { id: 'sky',    name: 'ท้องฟ้า',    dark: false, bar: '#2a62b8', dots: ['#f2f6fc', '#4a8de0', '#eaa82a'] },
+  { id: 'violet', name: 'ม่วงราตรี',  dark: true,  bar: '#3b2466', dots: ['#14111c', '#5d3ca3', '#a98bf5'] },
+  { id: 'black',  name: 'ดำสนิท',     dark: true,  bar: '#000000', dots: ['#000000', '#1f1f23', '#f2c14e'] }
+];
+var THEME_KEY = 'moo-mee-tang-theme';
+
+function currentThemeId() {
+  try { return localStorage.getItem(THEME_KEY) || 'teal'; } catch (e) { return 'teal'; }
+}
+
+function applyTheme(id) {
+  var t = THEMES.filter(function (x) { return x.id === id; })[0] || THEMES[0];
+  if (t.id === 'teal') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t.id);
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t.bar);
+  return t.id;
+}
+applyTheme(currentThemeId());
+
+// ===================== คลังไอคอนหมวดหมู่ =====================
+// ใช้อิโมจิ (บน iPhone แสดงเป็นภาพสีสวยแบบ Apple) — ทำงานออฟไลน์ได้ และเก็บในชีตเป็นตัวอักษรธรรมดา
+// ไม่ใช้รูปแทรกในเซลล์ เพราะแบบนั้นแอปอ่านไม่ได้
+
+var ICON_LIBRARY = [
+  { name: 'อาหารและเครื่องดื่ม', icons: ['🍚','🍜','🍛','🍲','🍱','🍣','🥟','🍳','🍔','🍕','🥗','🍗','🥩','🍞','🍰','🍩','🍦','🍉','🍎','🧋','☕','🥤','🍺','🍻'] },
+  { name: 'เดินทาง', icons: ['🚗','🚕','🛵','🏍️','🚌','🚆','🚇','✈️','🚲','⛽','🅿️','🔧','🛞','🛳️'] },
+  { name: 'บ้านและบิล', icons: ['🏠','🏢','💡','💧','🔥','📶','📱','💻','📺','🧺','🧹','🛋️','🔑','🧾','🧻','🪴'] },
+  { name: 'ช้อปปิ้ง', icons: ['🛍️','🛒','👕','👗','👟','👜','💄','💍','⌚','🎁','📦','🧸'] },
+  { name: 'สุขภาพ', icons: ['💊','🏥','🩺','🦷','👓','💪','🏃','🧘','🩹','💉'] },
+  { name: 'ครอบครัวและสังคม', icons: ['👶','🍼','🧒','👨‍👩‍👧','🐶','🐱','💝','🙏','🎂','💒','🤝','🧧'] },
+  { name: 'บันเทิงและการศึกษา', icons: ['🎬','🎮','🎵','🎤','📚','🎓','✏️','🎨','⚽','🏸','🏖️','🏕️','🎟️','📸'] },
+  { name: 'รายรับและการเงิน', icons: ['💵','💰','💳','🏦','💸','🪙','📈','📉','💹','💼','🧑‍⚕️','🔬','⏰','🏆','🏅','➕'] },
+  { name: 'อื่นๆ', icons: ['⭐','❤️','🔶','🔷','📌','🗂️','❓','✨'] }
+];
+
+/** ไอคอนของหมวดหมู่ (ไว้แสดงในรายการ) — ถ้าหาไม่เจอใช้ไอคอนพื้นฐานตามประเภท */
+function categoryIcon(type, name) {
+  var list = state.categories[type] || [];
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].name === name && list[i].icon) return list[i].icon;
+  }
+  return type === 'income' ? '💰' : '🧾';
+}
 
 var PALETTE = ['#4FA8E8', '#FF7E79', '#F5C451', '#8E7CE8', '#4FD1B0',
   '#F2934E', '#E85D9E', '#7ED957', '#B47EE8', '#5DC8CD'];
@@ -554,13 +605,13 @@ function renderDonutSvg(cats, total, centerLabel, valueColor) {
       offset += len;
     });
   } else {
-    ring = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#2a2d34" stroke-width="' + stroke + '"></circle>';
+    ring = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke-width="' + stroke + '" style="stroke:var(--border)"></circle>';
   }
 
   return '<svg viewBox="0 0 ' + size + ' ' + size + '" width="' + size + '" height="' + size + '" role="img">' +
     ring +
     '<text class="donut-center-label" x="' + cx + '" y="' + (cy - 6) + '" text-anchor="middle">' + escapeHtml(centerLabel) + '</text>' +
-    '<text class="donut-center-value" x="' + cx + '" y="' + (cy + 18) + '" text-anchor="middle" fill="' + valueColor + '">' +
+    '<text class="donut-center-value" x="' + cx + '" y="' + (cy + 18) + '" text-anchor="middle" style="fill:' + valueColor + '">' +
     escapeHtml(formatBaht(total)) + '</text>' +
     '</svg>';
 }
@@ -578,8 +629,8 @@ function renderBarsSvg(rows) {
     body +=
       '<text class="bar-label" x="0" y="' + (y + 12) + '">' + escapeHtml(r.label) + '</text>' +
       '<text class="bar-value" x="' + width + '" y="' + (y + 12) + '" text-anchor="end">' + escapeHtml(formatBaht(r.value)) + '</text>' +
-      '<rect x="0" y="' + (y + 20) + '" width="' + barW + '" height="16" rx="8" fill="#22242c"></rect>' +
-      '<rect x="0" y="' + (y + 20) + '" width="' + w + '" height="16" rx="8" fill="' + r.color + '"></rect>';
+      '<rect x="0" y="' + (y + 20) + '" width="' + barW + '" height="16" rx="8" style="fill:var(--bg-card-alt)"></rect>' +
+      '<rect x="0" y="' + (y + 20) + '" width="' + w + '" height="16" rx="8" style="fill:' + r.color + '"></rect>';
   });
 
   return '<svg viewBox="0 0 ' + width + ' ' + height + '" width="' + width + '" height="' + height + '" role="img">' +
@@ -689,7 +740,7 @@ function renderHome() {
       row.className = 'tx-row' + (item.pending ? ' pending' : '');
       var sign = item.type === 'income' ? '' : '-';
       row.innerHTML =
-        '<div class="tx-icon">' + (item.type === 'income' ? '💰' : '🧾') + '</div>' +
+        '<div class="tx-icon">' + escapeHtml(categoryIcon(item.type, item.category)) + '</div>' +
         '<div class="tx-info">' +
         '  <div class="tx-cat">' + escapeHtml(item.category) +
              (item.pending ? '<span class="pending-badge">รอซิงก์</span>' : '') + '</div>' +
@@ -810,15 +861,15 @@ function renderAnalysis() {
     netEl.style.color = comb.net >= 0 ? 'var(--green)' : 'var(--red)';
 
     host.innerHTML = renderBarsSvg([
-      { label: 'รายได้', value: comb.totalIncome, color: '#5fd68a' },
-      { label: 'ค่าใช้จ่าย', value: comb.totalExpense, color: '#ff7a7a' }
+      { label: 'รายได้', value: comb.totalIncome, color: 'var(--green)' },
+      { label: 'ค่าใช้จ่าย', value: comb.totalExpense, color: 'var(--red)' }
     ]);
 
     if (!comb.categories.length) { emptyEl.hidden = false; return; }
     emptyEl.hidden = true;
 
     comb.categories.forEach(function (c) {
-      var color = c.type === 'income' ? '#5fd68a' : '#ff7a7a';
+      var color = c.type === 'income' ? 'var(--green)' : 'var(--red)';
       var sign = c.type === 'income' ? '+' : '-';
       var row = document.createElement('div');
       row.className = 'analysis-row';
@@ -834,7 +885,7 @@ function renderAnalysis() {
 
   summaryAll.hidden = true;
   var data = computeAnalysis(month, state.analysisType);
-  var valueColor = state.analysisType === 'income' ? '#5fd68a' : '#ff7a7a';
+  var valueColor = state.analysisType === 'income' ? 'var(--green)' : 'var(--red)';
   host.innerHTML = renderDonutSvg(data.categories, data.total, 'รวม', valueColor);
 
   if (!data.categories.length) { emptyEl.hidden = false; return; }
@@ -853,27 +904,138 @@ function renderAnalysis() {
 }
 
 function renderMore() {
-  renderChipList('incomeCatList', state.categories.income || [], 'income');
-  renderChipList('expenseCatList', state.categories.expense || [], 'expense');
+  renderCategoryTiles('incomeCatList', 'income');
+  renderCategoryTiles('expenseCatList', 'expense');
+  renderThemes();
   $('appVersion').textContent = APP_VERSION;
   renderSyncStatus();
 }
 
-function renderChipList(elId, list, type) {
+function renderCategoryTiles(elId, type) {
   var el = $(elId);
-  el.innerHTML = list.map(function (c) {
-    return '<span class="chip">' + escapeHtml(c.icon || '') + ' ' + escapeHtml(c.name) +
-      ' <button data-name="' + escapeHtml(c.name) + '" aria-label="ลบหมวดหมู่">✕</button></span>';
-  }).join('');
+  var list = state.categories[type] || [];
+  el.innerHTML = list.map(function (c, i) {
+    return '<button class="cat-tile" data-i="' + i + '">' +
+      '<span class="cat-icon">' + escapeHtml(c.icon || categoryIcon(type, '')) + '</span>' +
+      '<span class="cat-name">' + escapeHtml(c.name) + '</span></button>';
+  }).join('') +
+    '<button class="cat-tile add" data-add="1"><span class="cat-icon">＋</span><span class="cat-name">เพิ่ม</span></button>';
 
-  el.querySelectorAll('button').forEach(function (btn) {
+  el.querySelectorAll('.cat-tile').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var name = btn.dataset.name;
-      if (!confirm('ลบหมวดหมู่ "' + name + '" หรือไม่?')) return;
-      performWrite('deleteCategory', [type, name], function () {
-        state.categories[type] = (state.categories[type] || []).filter(function (c) { return c.name !== name; });
-      }, 'ลบหมวดหมู่ ' + name).then(function () { showToast('ลบหมวดหมู่แล้ว'); });
+      if (btn.dataset.add) openCategoryModal(type, null);
+      else openCategoryModal(type, list[Number(btn.dataset.i)]);
     });
+  });
+}
+
+function renderThemes() {
+  var el = $('themeList');
+  if (!el) return;
+  var cur = currentThemeId();
+  el.innerHTML = THEMES.map(function (t) {
+    return '<button class="theme-opt' + (t.id === cur ? ' selected' : '') + '" data-id="' + t.id + '">' +
+      '<div class="theme-swatch" style="background:' + t.dots[0] + '">' +
+      t.dots.slice(1).map(function (d) { return '<i style="background:' + d + '"></i>'; }).join('') +
+      '</div><div class="theme-name"><span>' + escapeHtml(t.name) + '</span><span>' + (t.id === cur ? '✓' : '') + '</span></div></button>';
+  }).join('');
+  el.querySelectorAll('.theme-opt').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      try { localStorage.setItem(THEME_KEY, btn.dataset.id); } catch (e) { /* ไม่เป็นไร */ }
+      applyTheme(btn.dataset.id);
+      renderCurrentTab();
+    });
+  });
+}
+
+// ----- หน้าต่างเพิ่ม/แก้ไขหมวดหมู่ -----
+
+var categoryEdit = { type: 'expense', original: null, icon: '' };
+
+function openCategoryModal(type, cat) {
+  categoryEdit.type = type;
+  categoryEdit.original = cat ? cat.name : null;
+  categoryEdit.icon = (cat && cat.icon) || (type === 'income' ? '💵' : '🧾');
+
+  var label = type === 'income' ? 'รายรับ' : 'รายจ่าย';
+  $('categoryModalTitle').textContent = cat ? 'แก้ไขหมวด' + label : 'เพิ่มหมวด' + label;
+  $('categoryNameInput').value = cat ? cat.name : '';
+  $('deleteCategoryBtn').hidden = !cat;
+  $('categoryRenameNote').hidden = true;
+  renderIconPicker();
+  openModal('categoryModal');
+}
+
+function renderIconPicker() {
+  $('categoryIconPreview').textContent = categoryEdit.icon;
+  var host = $('iconPicker');
+  host.innerHTML = ICON_LIBRARY.map(function (g) {
+    return '<div class="icon-group-title">' + escapeHtml(g.name) + '</div><div class="icon-grid">' +
+      g.icons.map(function (ic) {
+        return '<button class="icon-opt' + (ic === categoryEdit.icon ? ' selected' : '') + '" data-ic="' +
+          escapeHtml(ic) + '" aria-label="' + escapeHtml(ic) + '">' + escapeHtml(ic) + '</button>';
+      }).join('') + '</div>';
+  }).join('');
+  host.querySelectorAll('.icon-opt').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      categoryEdit.icon = btn.dataset.ic;
+      $('categoryIconPreview').textContent = categoryEdit.icon;
+      host.querySelectorAll('.icon-opt.selected').forEach(function (x) { x.classList.remove('selected'); });
+      btn.classList.add('selected');
+    });
+  });
+}
+
+/** เปลี่ยนชื่อหมวดในข้อมูลที่เก็บในเครื่อง (ให้ตรงกับที่เซิร์ฟเวอร์ทำกับรายการเก่าทุกเดือน) */
+function renameCategoryLocal(type, oldName, newName) {
+  Object.keys(state.months).forEach(function (k) {
+    (state.months[k].days || []).forEach(function (d) {
+      (d.items || []).forEach(function (it) {
+        if (it.type === type && it.category === oldName) it.category = newName;
+      });
+    });
+  });
+}
+
+function saveCategory() {
+  var type = categoryEdit.type;
+  var name = $('categoryNameInput').value.trim();
+  var icon = categoryEdit.icon;
+  var old = categoryEdit.original;
+  if (!name) { showToast('กรุณาใส่ชื่อหมวดหมู่'); return; }
+
+  var list = state.categories[type] || (state.categories[type] = []);
+  var clash = list.some(function (c) { return c.name === name && c.name !== old; });
+  if (clash) { showToast('มีหมวดหมู่ชื่อนี้อยู่แล้ว'); return; }
+
+  if (!old) {
+    performWrite('addCategory', [type, name, icon], function () {
+      list.push({ name: name, icon: icon });
+    }, 'เพิ่มหมวดหมู่ ' + name).then(function () {
+      closeModal('categoryModal');
+      showToast('เพิ่มหมวดหมู่แล้ว');
+    });
+    return;
+  }
+
+  performWrite('updateCategory', [type, old, name, icon], function () {
+    list.forEach(function (c) { if (c.name === old) { c.name = name; c.icon = icon; } });
+    if (name !== old) renameCategoryLocal(type, old, name);
+  }, 'แก้ไขหมวดหมู่ ' + old).then(function () {
+    closeModal('categoryModal');
+    showToast(name !== old ? 'แก้ไขแล้ว — เปลี่ยนชื่อในรายการเก่าให้ด้วย' : 'แก้ไขหมวดหมู่แล้ว');
+  });
+}
+
+function deleteCategoryFromModal() {
+  var type = categoryEdit.type, name = categoryEdit.original;
+  if (!name) return;
+  if (!confirm('ลบหมวดหมู่ "' + name + '" หรือไม่?\n(รายการเก่าที่เคยบันทึกไว้ยังอยู่ครบ)')) return;
+  performWrite('deleteCategory', [type, name], function () {
+    state.categories[type] = (state.categories[type] || []).filter(function (c) { return c.name !== name; });
+  }, 'ลบหมวดหมู่ ' + name).then(function () {
+    closeModal('categoryModal');
+    showToast('ลบหมวดหมู่แล้ว');
   });
 }
 
@@ -1265,8 +1427,13 @@ function bindEvents() {
     });
   });
 
-  on('addIncomeCatBtn', 'click', function () { addCategoryFromInput('income', 'newIncomeCatName'); });
-  on('addExpenseCatBtn', 'click', function () { addCategoryFromInput('expense', 'newExpenseCatName'); });
+  on('closeCategoryModalBtn', 'click', function () { closeModal('categoryModal'); });
+  on('saveCategoryBtn', 'click', saveCategory);
+  on('deleteCategoryBtn', 'click', deleteCategoryFromModal);
+  on('categoryNameInput', 'input', function () {
+    var changed = categoryEdit.original && $('categoryNameInput').value.trim() !== categoryEdit.original;
+    $('categoryRenameNote').hidden = !changed;
+  });
 
   document.querySelectorAll('.modal-overlay').forEach(function (ov) {
     ov.addEventListener('click', function (e) { if (e.target === ov) ov.classList.remove('open'); });
@@ -1283,23 +1450,6 @@ function bindEvents() {
   // กลับมาเปิดแอปอีกครั้ง (สลับจากแอปอื่น) ก็ซิงก์ให้สดเสมอ
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden && isOnline()) fullSync();
-  });
-}
-
-function addCategoryFromInput(type, inputId) {
-  var input = $(inputId);
-  var name = input.value.trim();
-  if (!name) return;
-  var exists = (state.categories[type] || []).some(function (c) { return c.name === name; });
-  if (exists) { showToast('มีหมวดหมู่นี้อยู่แล้ว'); return; }
-
-  var icon = type === 'income' ? '💵' : '🧾';
-  performWrite('addCategory', [type, name, icon], function () {
-    if (!state.categories[type]) state.categories[type] = [];
-    state.categories[type].push({ name: name, icon: icon });
-  }, 'เพิ่มหมวดหมู่ ' + name).then(function () {
-    input.value = '';
-    showToast('เพิ่มหมวดหมู่แล้ว');
   });
 }
 
