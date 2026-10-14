@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-14-pwa-5';
+var APP_VERSION = '2026-10-14-pwa-6';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -577,7 +577,7 @@ function recomputeMonthTotals(month) {
     (day.items || []).forEach(function (it) {
       var amt = Number(it.amount) || 0;
       if (it.type === 'income') { day.income += amt; income += amt; }
-      else { day.expense += amt; expense += amt; }
+      else if (it.type === 'expense') { day.expense += amt; expense += amt; }   // การโอนไม่นับ
     });
   });
   month.days = (month.days || []).filter(function (d) { return (d.items || []).length > 0; });
@@ -585,6 +585,16 @@ function recomputeMonthTotals(month) {
   month.totalIncome = income;
   month.totalExpense = expense;
   month.balance = income - expense;
+}
+
+/** ผลของรายการต่อยอดสินทรัพย์ ตรงกับ txEffects_ ฝั่งเซิร์ฟเวอร์ */
+function txEffects(type, account, toAccount, amount) {
+  amount = Number(amount) || 0;
+  if (type === 'transfer') return [[account, -amount], [toAccount, amount]];
+  return [[account, type === 'income' ? amount : -amount]];
+}
+function applyEffectsLocal(effects, sign) {
+  effects.forEach(function (e) { applyAssetDeltaLocal(e[0], sign * e[1]); });
 }
 
 function addTransactionLocal(tx) {
@@ -601,14 +611,15 @@ function addTransactionLocal(tx) {
     localId: 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
     pending: true,                 // ยังไม่ได้ขึ้นชีต — แสดงป้าย "รอซิงก์" ให้เห็นชัด
     type: tx.type,
-    category: tx.category,
+    category: tx.type === 'transfer' ? 'โอนเงิน' : tx.category,
     account: tx.account,
+    toAccount: tx.type === 'transfer' ? tx.toAccount : '',
     amount: Number(tx.amount) || 0,
     note: tx.note || ''
   });
 
   recomputeMonthTotals(month);
-  applyAssetDeltaLocal(tx.account, tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount));
+  applyEffectsLocal(txEffects(tx.type, tx.account, tx.toAccount, tx.amount), 1);
 }
 
 function deleteTransactionLocal(monthK, rowIndex) {
@@ -623,7 +634,7 @@ function deleteTransactionLocal(monthK, rowIndex) {
   });
   if (!removed) return;
   recomputeMonthTotals(month);
-  applyAssetDeltaLocal(removed.account, removed.type === 'income' ? -removed.amount : removed.amount);
+  applyEffectsLocal(txEffects(removed.type, removed.account, removed.toAccount, removed.amount), -1);
 }
 
 function findGroupLocal(name) {
@@ -771,6 +782,17 @@ function renderSyncStatus() {
 function updateMonthLabel() {
   var el = $('monthLabel');
   if (el) el.textContent = THAI_MONTHS_FULL[state.monthIndex] + ' ' + (state.year + 543);
+  updateCalToggle();
+}
+
+/** ไอคอนปฏิทินข้างชื่อเดือน: แตะชื่อเดือนเพื่อเปิด/ปิดปฏิทิน (เฉพาะหน้าหลัก) */
+function updateCalToggle() {
+  var btn = $('monthLabelBtn');
+  if (!btn) return;
+  var onHome = state.tab === 'home';
+  btn.classList.toggle('clickable', onHome);
+  btn.classList.toggle('active', onHome && homeView() === 'calendar');
+  $('calToggleIcon').hidden = !onHome;
 }
 
 function currentMonth() {
@@ -803,9 +825,7 @@ function renderHome() {
 
   // ----- มุมมองรายการ / ปฏิทิน -----
   var view = homeView();
-  document.querySelectorAll('#homeViewSegment .seg-btn').forEach(function (b) {
-    b.classList.toggle('active', b.dataset.view === view);
-  });
+  updateCalToggle();
   var calHost = $('homeCalendar');
   var filterBar = $('dayFilterBar');
   var monthPrefix = state.year + '-' + String(state.monthIndex + 1).padStart(2, '0') + '-';
@@ -839,10 +859,10 @@ function renderHome() {
   if (!days.length) {
     empty.hidden = false;
     if (view === 'calendar' && state.selectedDay && month) {
-      empty.textContent = 'ไม่มีรายการในวันนี้ — กดปุ่ม + เพื่อบันทึกของวันที่เลือก';
+      empty.textContent = 'ไม่มีรายการในวันนี้ — กดปุ่ม ✏️ เพื่อบันทึกของวันที่เลือก';
     } else {
       empty.textContent = month
-        ? 'ยังไม่มีรายการในเดือนนี้ กดปุ่ม + เพื่อเริ่มบันทึก'
+        ? 'ยังไม่มีรายการในเดือนนี้ กดปุ่ม ✏️ เพื่อเริ่มบันทึก'
         : (isOnline() ? 'กำลังโหลดข้อมูลเดือนนี้...' : 'ยังไม่มีข้อมูลเดือนนี้ในเครื่อง ต่อเน็ตแล้วกด ⟳ เพื่อดึงข้อมูล');
     }
     return;
@@ -865,13 +885,14 @@ function renderHome() {
     day.items.slice().reverse().forEach(function (item) {
       var row = document.createElement('div');
       row.className = 'tx-row' + (item.pending ? ' pending' : '');
-      var sign = item.type === 'income' ? '' : '-';
+      var isTransfer = item.type === 'transfer';
+      var sign = (item.type === 'expense') ? '-' : '';
       row.innerHTML =
-        '<div class="tx-icon">' + escapeHtml(categoryIcon(item.type, item.category)) + '</div>' +
+        '<div class="tx-icon">' + escapeHtml(isTransfer ? '🔁' : categoryIcon(item.type, item.category)) + '</div>' +
         '<div class="tx-info">' +
-        '  <div class="tx-cat">' + escapeHtml(item.category) +
+        '  <div class="tx-cat">' + escapeHtml(isTransfer ? 'โอนเงิน' : item.category) +
              (item.pending ? '<span class="pending-badge">รอซิงก์</span>' : '') + '</div>' +
-        '  <div class="tx-account">' + escapeHtml(item.account) +
+        '  <div class="tx-account">' + escapeHtml(isTransfer ? item.account + ' → ' + item.toAccount : item.account) +
              (item.note ? ' · ' + escapeHtml(item.note) : '') + '</div>' +
         '</div>' +
         '<div class="tx-amount ' + item.type + '">' + sign + escapeHtml(formatBaht(item.amount)) + '</div>' +
@@ -1395,15 +1416,20 @@ function allAssetsFlat() {
 }
 
 function populateAccountSelect() {
-  var sel = $('txAccount');
-  if (!sel) return;
   var assets = allAssetsFlat();
-  sel.innerHTML = assets.length
+  var html = assets.length
     ? assets.map(function (a) {
         return '<option value="' + escapeHtml(a.name) + '">' + escapeHtml(assetIcon(a) + ' ' + a.name) + '</option>';
       }).join('')
     : '<option value="">— เพิ่มสินทรัพย์ในแท็บกระเป๋าเงินก่อน —</option>';
-  sel.selectedIndex = 0;
+  ['txAccount', 'txToAccount'].forEach(function (id) {
+    var sel = $(id);
+    if (!sel) return;
+    sel.innerHTML = html;
+    sel.selectedIndex = 0;
+  });
+  // ปลายทางเริ่มต้นไม่ให้ซ้ำกับต้นทาง
+  if (assets.length > 1 && $('txToAccount')) $('txToAccount').selectedIndex = 1;
 }
 
 function getCurrentTxType() {
@@ -1422,9 +1448,14 @@ function setTxType(type) {
     b.classList.toggle('active', b.dataset.type === type);
   });
   var modal = $('txModal');
-  modal.classList.toggle('type-expense', type !== 'income');
+  modal.classList.toggle('type-expense', type === 'expense');
   modal.classList.toggle('type-income', type === 'income');
-  populateCategorySelect();
+  modal.classList.toggle('type-transfer', type === 'transfer');
+  var isTransfer = type === 'transfer';
+  $('txCategoryRow').hidden = isTransfer;
+  $('txToAccountRow').hidden = !isTransfer;
+  $('txAccountLabel').textContent = isTransfer ? 'จากบัญชี' : 'บัญชี/สินทรัพย์';
+  if (!isTransfer) populateCategorySelect();
 }
 
 function selectOrAdd(sel, value, label) {
@@ -1460,8 +1491,9 @@ function openTxModal(edit) {
     $('txAmount').value = it.amount;
     $('txNote').value = it.note || '';
     // หมวด/บัญชีที่ถูกลบไปแล้วก็ยังแสดงค่าเดิมให้ ไม่เปลี่ยนเองโดยไม่รู้ตัว
-    selectOrAdd($('txCategory'), it.category, categoryIcon(it.type, it.category) + ' ' + it.category);
+    if (it.type !== 'transfer') selectOrAdd($('txCategory'), it.category, categoryIcon(it.type, it.category) + ' ' + it.category);
     selectOrAdd($('txAccount'), it.account);
+    if (it.type === 'transfer') selectOrAdd($('txToAccount'), it.toAccount);
   } else {
     setTxType(state.lastTxType || 'expense');
     populateAccountSelect();
@@ -1475,17 +1507,23 @@ function openTxModal(edit) {
 function saveTransaction() {
   var amount = parseFloat($('txAmount').value);
   if (!amount || amount <= 0) { showToast('กรุณาระบุจำนวนเงิน'); return; }
-  var category = $('txCategory').value;
+  var type = getCurrentTxType();
+  var category = type === 'transfer' ? 'โอนเงิน' : $('txCategory').value;
   if (!category) { showToast('กรุณาเลือกหมวดหมู่'); return; }
 
   var tx = {
     dateStr: $('txDate').value || todayStr(),
-    type: getCurrentTxType(),
+    type: type,
     category: category,
     account: $('txAccount').value,
     amount: amount,
     note: $('txNote').value
   };
+  if (type === 'transfer') {
+    tx.toAccount = $('txToAccount').value;
+    if (!tx.account || !tx.toAccount) { showToast('กรุณาเลือกบัญชีต้นทางและปลายทาง'); return; }
+    if (tx.account === tx.toAccount) { showToast('บัญชีต้นทางและปลายทางต้องไม่ซ้ำกัน'); return; }
+  }
 
   // เด้งไปเดือนของรายการที่เพิ่ง [บันทึก] เพื่อให้เห็นผลทันทีถ้าบันทึกย้อนเดือน
   var d = parseDateStr(tx.dateStr);
@@ -1511,10 +1549,11 @@ function saveTransaction() {
   if (homeView() === 'calendar') state.selectedDay = tx.dateStr;
 
   performWrite('addTransaction', [tx], function () { addTransactionLocal(tx); },
-    'บันทึก ' + tx.category
+    tx.type === 'transfer' ? 'โอน ' + tx.account + ' → ' + tx.toAccount : 'บันทึก ' + tx.category
   ).then(function () {
     closeModal('txModal');
-    showToast(isOnline() ? 'บันทึกรายการแล้ว' : 'บันทึกลงเครื่องแล้ว จะซิงก์ให้เมื่อมีเน็ต');
+    var what = tx.type === 'transfer' ? 'โอนเงินแล้ว' : 'บันทึกรายการแล้ว';
+    showToast(isOnline() ? what : 'บันทึกลงเครื่องแล้ว จะซิงก์ให้เมื่อมีเน็ต');
   });
 }
 
@@ -1902,9 +1941,9 @@ function bindEvents() {
   on('saveReorderBtn', 'click', saveReorder);
 
   // ปฏิทินหน้าหลัก + ตัวเลือกวันที่ในฟอร์ม
-  on('homeViewSegment', 'click', function (e) {
-    var btn = e.target.closest('.seg-btn');
-    if (btn) setHomeView(btn.dataset.view);
+  on('monthLabelBtn', 'click', function () {
+    if (state.tab !== 'home') return;
+    setHomeView(homeView() === 'calendar' ? 'list' : 'calendar');
   });
   on('clearDayFilterBtn', 'click', function () { state.selectedDay = null; renderHome(); });
   on('txDateBtn', 'click', toggleDatePicker);

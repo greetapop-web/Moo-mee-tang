@@ -398,3 +398,20 @@ h3{font-size:14px;color:var(--text-secondary);margin:18px 0 10px;font-weight:600
 .date-picker .cal-cell.has-data{background:var(--bg-card);}
 .dp-head{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:14px;margin-bottom:4px;}
 .dp-quick{display:flex;gap:8px;justify-content:center;margin-top:8px;}
+
+/* ===== v6: แตะชื่อเดือนเพื่อเปิด/ปิดปฏิทิน ===== */
+.month-label-btn{background:none;border:none;color:inherit;font:inherit;display:inline-flex;align-items:center;gap:8px;
+  padding:4px 12px;border-radius:999px;cursor:default;}
+.month-label-btn.clickable{cursor:pointer;}
+.month-label-btn.clickable:active{background:rgba(255,255,255,0.12);}
+.cal-toggle-icon{font-size:15px;line-height:1;padding:3px 6px;border-radius:8px;background:rgba(255,255,255,0.14);}
+.month-label-btn.active .cal-toggle-icon{background:var(--gold);box-shadow:0 0 0 2px rgba(255,255,255,0.25);}
+
+/* ===== v6: ปุ่มดินสอ (จดบันทึก) ===== */
+.nav-add{display:flex;align-items:center;justify-content:center;}
+.nav-add svg{display:block;}
+
+/* ===== v6: โอนระหว่างบัญชี ===== */
+.tx-amount.transfer{color:var(--text-secondary);}
+.transfer-arrow{text-align:center;color:var(--accent);font-size:20px;font-weight:700;margin:6px 0 -2px;}
+#txModal.type-transfer #txAmount{border-color:color-mix(in srgb, var(--accent) 55%, var(--border));}

@@ -53,7 +53,9 @@
       <div id="syncStatus" class="sync-status">กำลังเริ่มระบบ...</div>
       <div class="month-nav" id="monthNav">
         <button id="prevMonthBtn" class="nav-arrow" aria-label="เดือนก่อนหน้า">‹</button>
-        <span id="monthLabel">…</span>
+        <button id="monthLabelBtn" class="month-label-btn" aria-label="แสดง/ซ่อนปฏิทิน">
+          <span id="monthLabel">…</span><span id="calToggleIcon" class="cal-toggle-icon">📅</span>
+        </button>
         <button id="nextMonthBtn" class="nav-arrow" aria-label="เดือนถัดไป">›</button>
       </div>
     </header>
@@ -70,17 +72,13 @@
             <span>รายได้ <b class="text-income" id="homeIncome">฿0</b></span>
           </div>
         </div>
-        <div class="segmented small" id="homeViewSegment">
-          <button class="seg-btn active" data-view="list">☰ รายการ</button>
-          <button class="seg-btn" data-view="calendar">📅 ปฏิทิน</button>
-        </div>
         <div id="homeCalendar" class="home-calendar" hidden></div>
         <div id="dayFilterBar" class="day-filter" hidden>
           <span>แสดงเฉพาะ <b id="dayFilterLabel"></b></span>
           <button id="clearDayFilterBtn" class="chip-btn">ดูทั้งเดือน</button>
         </div>
         <div id="dayList" class="day-list"></div>
-        <div id="homeEmpty" class="empty-state" hidden>ยังไม่มีรายการในเดือนนี้ กดปุ่ม + เพื่อเริ่มบันทึก</div>
+        <div id="homeEmpty" class="empty-state" hidden>ยังไม่มีรายการในเดือนนี้ กดปุ่ม ✏️ เพื่อเริ่มบันทึก</div>
       </section>
 
       <!-- หน้ารวมสินทรัพย์ -->
@@ -149,7 +147,7 @@
       <button class="nav-btn active" data-tab="home"><span class="nav-icon">🏠</span><span>หน้าหลัก</span></button>
       <button class="nav-btn" data-tab="assets"><span class="nav-icon">👛</span><span>กระเป๋าเงิน</span></button>
       <div class="nav-add-slot">
-        <button id="fabAdd" class="nav-add" aria-label="เพิ่มรายการ">+</button>
+        <button id="fabAdd" class="nav-add" aria-label="จดบันทึกรายการ"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/><path d="M14.5 5.5l3 3"/></svg></button>
       </div>
       <button class="nav-btn" data-tab="analysis"><span class="nav-icon">📊</span><span>การวิเคราะห์</span></button>
       <button class="nav-btn" data-tab="more"><span class="nav-icon">⋯</span><span>เพิ่มเติม</span></button>
@@ -167,6 +165,7 @@
       <div class="segmented" id="txTypeSegment">
         <button class="seg-btn active" data-type="expense">รายจ่าย</button>
         <button class="seg-btn" data-type="income">รายรับ</button>
+        <button class="seg-btn" data-type="transfer">โอน</button>
       </div>
 
       <label>วันที่</label>
@@ -188,11 +187,19 @@
       <label>จำนวนเงิน</label>
       <input type="number" id="txAmount" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
 
-      <label>หมวดหมู่</label>
-      <select id="txCategory"></select>
+      <div id="txCategoryRow">
+        <label>หมวดหมู่</label>
+        <select id="txCategory"></select>
+      </div>
 
-      <label>บัญชี/สินทรัพย์</label>
+      <label id="txAccountLabel">บัญชี/สินทรัพย์</label>
       <select id="txAccount"></select>
+
+      <div id="txToAccountRow" hidden>
+        <div class="transfer-arrow">↓</div>
+        <label style="margin-top:0;">ไปบัญชี</label>
+        <select id="txToAccount"></select>
+      </div>
 
       <label>บันทึกเพิ่มเติม</label>
       <input type="text" id="txNote" placeholder="เช่น ข้าวเที่ยง">
