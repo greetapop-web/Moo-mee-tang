@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-14-pwa-7';
+var APP_VERSION = '2026-10-14-pwa-8';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -61,6 +61,7 @@ var THAI_DAYS_SHORT = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 // ===================== ธีมสี (เก็บเฉพาะในเครื่องนี้) =====================
 
 var THEMES = [
+  { id: 'piggy',  name: 'หมูมีตัง',   dark: false, bar: '#2f9e5b', dots: ['#f1f9ee', '#2f9e5b', '#f07c8e'] },
   { id: 'teal',   name: 'ทะเลยามค่ำ', dark: true,  bar: '#0f3a4d', dots: ['#121317', '#16606e', '#f2c14e'] },
   { id: 'pink',   name: 'หมูชมพู',    dark: false, bar: '#e2557d', dots: ['#fff6f3', '#f2789a', '#2e9e5b'] },
   { id: 'mint',   name: 'ใบเตย',      dark: false, bar: '#2e8b57', dots: ['#f2f8f3', '#4caf65', '#e8a92c'] },
@@ -83,6 +84,46 @@ function applyTheme(id) {
   return t.id;
 }
 applyTheme(currentThemeId());
+
+// ===================== ตัวการ์ตูนหมู + สัมผัสตอบสนอง (ตั้งค่าเฉพาะเครื่องนี้) =====================
+
+var MASCOT_KEY = 'moo-mee-tang-mascot';
+var HAPTICS_KEY = 'moo-mee-tang-haptics';
+function prefOn(key) { try { return localStorage.getItem(key) !== 'off'; } catch (e) { return true; } }
+function setPref(key, on) { try { localStorage.setItem(key, on ? 'on' : 'off'); } catch (e) { /* ไม่เป็นไร */ } }
+function applyMascot() { document.documentElement.classList.toggle('no-mascot', !prefOn(MASCOT_KEY)); }
+applyMascot();
+
+/**
+ * สั่นเบา ๆ เวลาแตะ
+ * iPhone ไม่ให้เว็บแอปสั่งสั่นตรง ๆ (navigator.vibrate ไม่มีบน iOS) แต่ตั้งแต่ iOS 18
+ * การแตะสวิตช์แบบ <input type="checkbox" switch> จะมีการสั่นแบบระบบ — เราจึงแอบกดสวิตช์ที่ซ่อนไว้
+ * ต้องเรียกระหว่างที่ผู้ใช้กำลังแตะอยู่เท่านั้น (ในตัวจัดการ click)
+ */
+var hapticEl = null;
+function haptic() {
+  if (!prefOn(HAPTICS_KEY)) return;
+  try {
+    if (navigator.vibrate) { navigator.vibrate(8); return; }
+    if (!hapticEl) {
+      hapticEl = document.createElement('label');
+      hapticEl.setAttribute('aria-hidden', 'true');
+      hapticEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;';
+      var input = document.createElement('input');
+      input.type = 'checkbox';
+      input.setAttribute('switch', '');
+      input.tabIndex = -1;
+      hapticEl.appendChild(input);
+      document.body.appendChild(hapticEl);
+    }
+    hapticEl.click();
+  } catch (e) { /* ไม่รองรับ ก็แค่ไม่สั่น */ }
+}
+var HAPTIC_TARGETS = 'button, .cat-tile, .tx-row, .asset-main, label.switch, .seg-btn, select';
+document.addEventListener('click', function (e) {
+  if (hapticEl && hapticEl.contains(e.target)) return;   // คลิกที่เราสร้างเอง ไม่นับซ้ำ
+  if (e.target.closest && e.target.closest(HAPTIC_TARGETS)) haptic();
+}, true);
 
 // ===================== คลังไอคอนหมวดหมู่ =====================
 // ใช้อิโมจิ (บน iPhone แสดงเป็นภาพสีสวยแบบ Apple) — ทำงานออฟไลน์ได้ และเก็บในชีตเป็นตัวอักษรธรรมดา
@@ -856,6 +897,7 @@ function renderHome() {
     filterBar.hidden = true;
   }
 
+  $('homeEmptyPig').hidden = !!days.length;
   if (!days.length) {
     empty.hidden = false;
     if (view === 'calendar' && state.selectedDay && month) {
@@ -1206,7 +1248,52 @@ function renderAnalysis() {
   });
 }
 
+// ===================== หน้าเพิ่มเติม: เมนูไอคอน =====================
+
+var MORE_MENU = [
+  { label: 'หมวดหมู่', icon: 'categories', page: 'categories' },
+  { label: 'บัญชี', icon: 'accounts', tab: 'assets' },
+  { label: 'โอนเงิน', icon: 'transfer', action: function () { openTxModal(null); setTxType('transfer'); } },
+  { label: 'จัดการกลุ่ม', icon: 'groups', action: function () { renderGroupsManageUI(); openModal('groupsModal'); } },
+  { label: 'การวิเคราะห์', icon: 'analysis', tab: 'analysis' },
+  { label: 'ธีมสี', icon: 'theme', page: 'theme' },
+  { label: 'การตั้งค่า', icon: 'settings', page: 'settings' },
+  { label: 'ซิงก์ข้อมูล', icon: 'sync', page: 'sync' },
+  { label: 'เกี่ยวกับ', icon: 'about', page: 'about' }
+];
+
+function renderMoreMenu() {
+  var el = $('moreMenu');
+  var icons = window.MMT_ICONS || {};
+  el.innerHTML = MORE_MENU.map(function (m, i) {
+    var badge = (m.page === 'sync' && state.outboxCount) ? '<span class="menu-badge">' + state.outboxCount + '</span>' : '';
+    return '<button class="menu-tile" data-i="' + i + '">' + badge +
+      '<span class="menu-icon">' + (icons[m.icon] || '') + '</span><span class="menu-label">' + escapeHtml(m.label) + '</span></button>';
+  }).join('');
+  el.querySelectorAll('.menu-tile').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var m = MORE_MENU[Number(b.dataset.i)];
+      if (m.page) openMorePage(m.page);
+      else if (m.tab) switchTab(m.tab);
+      else if (m.action) m.action();
+    });
+  });
+}
+
+function openMorePage(name) {
+  state.morePage = name;
+  $('moreMenu').hidden = !!name;
+  document.querySelectorAll('.more-page').forEach(function (p) { p.hidden = p.dataset.page !== name; });
+  if (name === 'settings') {
+    $('hapticsToggle').checked = prefOn(HAPTICS_KEY);
+    $('mascotToggle').checked = prefOn(MASCOT_KEY);
+  }
+  window.scrollTo(0, 0);
+}
+
 function renderMore() {
+  renderMoreMenu();
+  openMorePage(state.morePage || null);
   renderCategoryTiles('incomeCatList', 'income');
   renderCategoryTiles('expenseCatList', 'expense');
   renderThemes();
@@ -1843,6 +1930,7 @@ function moveGroupAndQueue(name, direction) {
 // ===================== แท็บและเดือน =====================
 
 function switchTab(tab) {
+  if (tab === 'more') state.morePage = null;   // แตะแท็บเพิ่มเติม = กลับมาที่เมนูเสมอ
   state.tab = tab;
   document.querySelectorAll('.nav-btn').forEach(function (b) {
     b.classList.toggle('active', b.dataset.tab === tab);
@@ -1937,6 +2025,13 @@ function bindEvents() {
   document.querySelectorAll('[data-reorder]').forEach(function (btn) {
     btn.addEventListener('click', function () { openReorderModal(btn.dataset.reorder); });
   });
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { openMorePage(null); });
+  });
+  on('hapticsToggle', 'change', function (e) { setPref(HAPTICS_KEY, e.target.checked); if (e.target.checked) haptic(); });
+  on('mascotToggle', 'change', function (e) { setPref(MASCOT_KEY, e.target.checked); applyMascot(); });
+  if (window.MMT_ICONS && $('fabIcon')) $('fabIcon').innerHTML = window.MMT_ICONS.pencil;
+
   on('closeReorderModalBtn', 'click', function () { closeModal('reorderModal'); });
   on('saveReorderBtn', 'click', saveReorder);
 
