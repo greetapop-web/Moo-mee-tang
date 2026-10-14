@@ -70,6 +70,15 @@
             <span>รายได้ <b class="text-income" id="homeIncome">฿0</b></span>
           </div>
         </div>
+        <div class="segmented small" id="homeViewSegment">
+          <button class="seg-btn active" data-view="list">☰ รายการ</button>
+          <button class="seg-btn" data-view="calendar">📅 ปฏิทิน</button>
+        </div>
+        <div id="homeCalendar" class="home-calendar" hidden></div>
+        <div id="dayFilterBar" class="day-filter" hidden>
+          <span>แสดงเฉพาะ <b id="dayFilterLabel"></b></span>
+          <button id="clearDayFilterBtn" class="chip-btn">ดูทั้งเดือน</button>
+        </div>
         <div id="dayList" class="day-list"></div>
         <div id="homeEmpty" class="empty-state" hidden>ยังไม่มีรายการในเดือนนี้ กดปุ่ม + เพื่อเริ่มบันทึก</div>
       </section>
@@ -110,10 +119,10 @@
 
       <!-- เพิ่มเติม -->
       <section id="tab-more" class="tab-panel">
-        <h3>หมวดหมู่รายรับ <span class="h3-hint">แตะเพื่อแก้ไข</span></h3>
+        <h3 class="h3-row"><span>หมวดหมู่รายรับ <span class="h3-hint">แตะเพื่อแก้ไข</span></span><button class="chip-btn" data-reorder="income">⇅ เรียงลำดับ</button></h3>
         <div id="incomeCatList" class="cat-grid"></div>
 
-        <h3>หมวดหมู่รายจ่าย <span class="h3-hint">แตะเพื่อแก้ไข</span></h3>
+        <h3 class="h3-row"><span>หมวดหมู่รายจ่าย <span class="h3-hint">แตะเพื่อแก้ไข</span></span><button class="chip-btn" data-reorder="expense">⇅ เรียงลำดับ</button></h3>
         <div id="expenseCatList" class="cat-grid"></div>
 
         <h3>ธีมสี <span class="h3-hint">ตั้งค่าเฉพาะเครื่องนี้</span></h3>
@@ -137,7 +146,7 @@
     </main>
 
     <nav class="bottom-nav">
-      <button class="nav-btn active" data-tab="home"><span class="nav-icon">📖</span><span>หนังสือ</span></button>
+      <button class="nav-btn active" data-tab="home"><span class="nav-icon">🏠</span><span>หน้าหลัก</span></button>
       <button class="nav-btn" data-tab="assets"><span class="nav-icon">👛</span><span>กระเป๋าเงิน</span></button>
       <div class="nav-add-slot">
         <button id="fabAdd" class="nav-add" aria-label="เพิ่มรายการ">+</button>
@@ -161,7 +170,20 @@
       </div>
 
       <label>วันที่</label>
-      <input type="date" id="txDate">
+      <input type="hidden" id="txDate">
+      <button type="button" id="txDateBtn" class="date-btn">📅</button>
+      <div id="txDatePicker" class="date-picker" hidden>
+        <div class="dp-head">
+          <button type="button" id="dpPrev" class="nav-arrow" aria-label="เดือนก่อนหน้า">‹</button>
+          <span id="dpLabel"></span>
+          <button type="button" id="dpNext" class="nav-arrow" aria-label="เดือนถัดไป">›</button>
+        </div>
+        <div id="dpGrid"></div>
+        <div class="dp-quick">
+          <button type="button" id="dpToday" class="chip-btn">วันนี้</button>
+          <button type="button" id="dpYesterday" class="chip-btn">เมื่อวาน</button>
+        </div>
+      </div>
 
       <label>จำนวนเงิน</label>
       <input type="number" id="txAmount" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
@@ -193,8 +215,14 @@
         <span>เพิ่มสินทรัพย์</span>
         <button id="closeAssetModalBtn" class="icon-btn">✕</button>
       </div>
-      <label>ชื่อสินทรัพย์</label>
-      <input type="text" id="assetName" placeholder="เช่น กองทุน S&amp;P500">
+      <div class="cat-edit-top">
+        <button type="button" id="newAssetIconBtn" class="cat-icon big icon-pick-btn" aria-label="เลือกไอคอน">💰</button>
+        <div style="flex:1;">
+          <label for="assetName">ชื่อสินทรัพย์</label>
+          <input type="text" id="assetName" placeholder="เช่น กองทุน S&amp;P500">
+        </div>
+      </div>
+      <p class="cat-note muted">แตะไอคอนเพื่อเลือกรูป</p>
       <label>กลุ่ม</label>
       <select id="assetGroupSelect"></select>
       <div id="newGroupNameRow" hidden>
@@ -213,8 +241,19 @@
         <span id="editBalanceTitle">จัดการ</span>
         <button id="closeEditBalanceBtn" class="icon-btn">✕</button>
       </div>
+      <div class="asset-edit-top">
+        <button type="button" id="editAssetIconBtn" class="cat-icon big icon-pick-btn" aria-label="เปลี่ยนไอคอน">💰</button>
+        <div class="include-box">
+          <div class="include-line">
+            <span>นับใน <b>เงินที่ใช้ได้</b></span>
+            <label class="switch"><input type="checkbox" id="editAssetInclude"><span class="switch-slider"></span></label>
+          </div>
+          <div id="editAssetIncludeHint" class="include-hint"></div>
+        </div>
+      </div>
+
       <label>ยอดคงเหลือใหม่</label>
-      <input type="number" id="editBalanceValue" step="0.01">
+      <input type="number" id="editBalanceValue" inputmode="decimal" step="0.01">
       <button id="saveEditBalanceBtn" class="primary-btn">บันทึกยอด</button>
 
       <label>ย้ายไปกลุ่ม</label>
@@ -232,7 +271,7 @@
         <span>จัดการกลุ่มสินทรัพย์</span>
         <button id="closeGroupsModalBtn" class="icon-btn">✕</button>
       </div>
-      <p class="about-text">สลับสวิตช์ "รวมยอด" เพื่อเลือกว่ากลุ่มนั้นจะถูกนับเข้ายอดสินทรัพย์รวมทั้งหมดหรือไม่ ใช้ปุ่ม ▲▼ เพื่อเรียงลำดับกลุ่ม</p>
+      <p class="about-text">สวิตช์ = นับทั้งกลุ่มใน "เงินที่ใช้ได้" หรือไม่ (กดแล้วรายการย่อยในกลุ่มทำตามทั้งหมด) ถ้าอยากเลือกทีละรายการ แตะที่สินทรัพย์นั้นในหน้ากระเป๋าเงิน ใช้ปุ่ม ▲▼ เพื่อเรียงลำดับกลุ่ม</p>
       <div id="groupsManageList" class="groups-manage-list"></div>
       <div class="add-row" style="margin-top:14px;">
         <input type="text" id="newGroupName" placeholder="ชื่อกลุ่มใหม่">
@@ -263,6 +302,30 @@
 
       <button id="saveCategoryBtn" class="primary-btn">บันทึก</button>
       <button id="deleteCategoryBtn" class="danger-btn">ลบหมวดหมู่นี้</button>
+    </div>
+  </div>
+
+  <!-- Modal: เลือกไอคอน (เปิดซ้อนหน้าต่างอื่นได้) -->
+  <div id="iconPickerModal" class="modal-overlay top">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="iconPickerTitle">เลือกไอคอน</span>
+        <button id="closeIconPickerBtn" class="icon-btn" aria-label="ปิด">✕</button>
+      </div>
+      <div id="iconPickerModalBody" class="icon-picker tall"></div>
+    </div>
+  </div>
+
+  <!-- Modal: เรียงลำดับหมวดหมู่ -->
+  <div id="reorderModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="reorderModalTitle">เรียงลำดับหมวดหมู่</span>
+        <button id="closeReorderModalBtn" class="icon-btn" aria-label="ปิด">✕</button>
+      </div>
+      <p class="about-text">ลำดับนี้ใช้ทั้งในหน้านี้และในรายการเลือกหมวดหมู่ตอนบันทึก</p>
+      <div id="reorderList" class="reorder-list"></div>
+      <button id="saveReorderBtn" class="primary-btn">บันทึกลำดับ</button>
     </div>
   </div>
 

@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-14-pwa-4';
+var APP_VERSION = '2026-10-14-pwa-5';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -99,6 +99,43 @@ var ICON_LIBRARY = [
   { name: 'รายรับและการเงิน', icons: ['💵','💰','💳','🏦','💸','🪙','📈','📉','💹','💼','🧑‍⚕️','🔬','⏰','🏆','🏅','➕'] },
   { name: 'อื่นๆ', icons: ['⭐','❤️','🔶','🔷','📌','🗂️','❓','✨'] }
 ];
+
+// ไอคอนสำหรับสินทรัพย์ — วงกลมสีไว้แทนธนาคาร (เช่น 🟢 กสิกร 🔵 กรุงไทย 🟣 ไทยพาณิชย์ 🟡 กรุงศรี)
+var ASSET_ICON_LIBRARY = [
+  { name: 'เงินสดและกระเป๋า', icons: ['💵','💴','💶','💷','👛','👝','💼','🐷','🫙','🧧','💰','🪙'] },
+  { name: 'ธนาคารและบัตร', icons: ['🏦','💳','🏧','📱','📲','🟢','🔵','🟣','🟡','🟠','🔴','🟤','⚫','⚪'] },
+  { name: 'ลงทุนและออม', icons: ['📈','📊','💹','📉','🥇','💎','🏠','🏢','🚗','🌱','🎯','🗓️'] },
+  { name: 'ประกันและเกษียณ', icons: ['🛡️','☂️','🏥','🧓','🏖️','🌴','⛱️','🔒','🗝️','📜'] },
+  { name: 'อื่นๆ', icons: ['⭐','❤️','✨','🎁','🍚','🛒','✈️','🎓','👶','🐶','📌','❓'] }
+];
+
+/** ไอคอนพื้นฐานของสินทรัพย์ที่ยังไม่ได้เลือก — เดาจากชื่อกลุ่ม/ชื่อสินทรัพย์ */
+function defaultAssetIcon(asset) {
+  var s = String((asset && asset.group) || '') + ' ' + String((asset && asset.name) || '');
+  var rules = [
+    [/ธนาคาร|บัญชี|bank/i, '🏦'], [/ทอง|gold/i, '🥇'], [/ลงทุน|กองทุน|หุ้น|fund|dime|crypto/i, '📈'],
+    [/เกษียณ|บำนาญ|กบข|pvd/i, '🏖️'], [/กันชน|ฉุกเฉิน|ประกัน/i, '🛡️'], [/เก็บ|ออม/i, '🐷'],
+    [/true ?money|wallet|e-?wallet|เป๋าตัง|shopee|line ?pay/i, '📱'], [/เงินสด|cash/i, '💵']
+  ];
+  for (var i = 0; i < rules.length; i++) if (rules[i][0].test(s)) return rules[i][1];
+  return '💰';
+}
+
+function assetIcon(asset) { return (asset && asset.icon) || defaultAssetIcon(asset); }
+
+/** สินทรัพย์ถูกนับใน "เงินที่ใช้ได้" หรือไม่ — ค่าที่เลือกแยกรายตัวชนะสวิตช์ของกลุ่ม */
+function assetCounted(asset, group) {
+  if (asset.include === true || asset.include === false) return asset.include;
+  return !!(group && group.includeInTotal);
+}
+
+/** สรุปการนับของกลุ่ม: 'all' | 'none' | 'some' */
+function groupCountState(group) {
+  var list = group.assets || [];
+  if (!list.length) return group.includeInTotal ? 'all' : 'none';
+  var n = list.filter(function (a) { return assetCounted(a, group); }).length;
+  return n === list.length ? 'all' : (n === 0 ? 'none' : 'some');
+}
 
 /** ไอคอนของหมวดหมู่ (ไว้แสดงในรายการ) — ถ้าหาไม่เจอใช้ไอคอนพื้นฐานตามประเภท */
 function categoryIcon(type, name) {
@@ -299,7 +336,12 @@ function apiPost(body) {
 
 /** ดึงข้อมูลทั้งหมดจากชีตมาทับสำเนาในเครื่อง */
 function syncFromServer() {
-  return apiGet('bootstrap', { monthsBack: CONFIG.MONTHS_TO_CACHE || 2 })
+  return apiGet('bootstrap', { monthsBack: CONFIG.MONTHS_TO_CACHE || 2 }).then(applyBootstrap);
+}
+
+/** เอาชุดข้อมูลจากชีตมาทับสำเนาในเครื่อง (ใช้ทั้งจาก GET bootstrap และจากคำตอบของ POST แบบซิงก์เร็ว) */
+function applyBootstrap(data) {
+  return Promise.resolve(data)
     .then(function (data) {
       state.categories = data.categories || { income: [], expense: [] };
       state.assetsOverview = data.assetsOverview || { total: 0, groups: [] };
@@ -321,6 +363,17 @@ function syncFromServer() {
       writes.push(kvSet('lastSync', state.lastSync));
 
       return Promise.all(writes);
+    })
+    .then(function () {
+      // รายการที่บันทึกเข้ามา "ระหว่าง" ซิงก์ ยังอยู่ในคิว ไม่อยู่ในข้อมูลจากชีต
+      // ใส่กลับเข้าไปให้เห็นต่อ (ป้ายรอซิงก์) ไม่ให้หายไปชั่วขณะ
+      return outboxAll().then(function (items) {
+        var replayed = 0;
+        items.forEach(function (it) {
+          if (it.action === 'addTransaction' && it.args && it.args[0]) { addTransactionLocal(it.args[0]); replayed++; }
+        });
+        if (replayed) return persistLocalState();
+      });
     });
 }
 
@@ -340,7 +393,7 @@ function fetchMonth(year, monthIndex) {
  * - คำสั่งที่เซิร์ฟเวอร์ปฏิเสธ (เช่นชื่อซ้ำ) จะถูกเอาออกจากคิวพร้อมแจ้งเตือน ไม่ปล่อยให้ค้างจนคิวตัน
  * - ถ้าเน็ตล่มระหว่างส่ง คิวจะคงอยู่ครบ แล้วลองใหม่รอบหน้า
  */
-function flushOutbox() {
+function flushOutbox(syncMonthsBack) {
   return outboxAll().then(function (items) {
     if (!items.length) return { flushed: 0 };
 
@@ -348,7 +401,11 @@ function flushOutbox() {
       return { id: it.id, action: it.action, args: it.args };
     });
 
-    return apiPost({ batch: batch }).then(function (data) {
+    // ขอข้อมูลล่าสุดกลับมาในคำขอเดียวกัน (เซิร์ฟเวอร์รุ่นใหม่จะแนบ bootstrap มาให้)
+    var body = { batch: batch };
+    if (syncMonthsBack !== undefined) body.sync = { monthsBack: syncMonthsBack };
+
+    return apiPost(body).then(function (data) {
       var results = (data && data.results) || [];
       var failures = [];
       var chain = Promise.resolve();
@@ -365,23 +422,38 @@ function flushOutbox() {
         if (failures.length) {
           showToast('ซิงก์ไม่สำเร็จ ' + failures.length + ' รายการ — ' + failures[0]);
         }
-        return { flushed: results.length, failures: failures };
+        return { flushed: results.length, failures: failures, bootstrap: data && data.bootstrap };
       });
     });
   });
 }
 
-/** งานซิงก์เต็มรูปแบบ: ส่งคิวก่อน แล้วค่อยดึงข้อมูลจริงมาทับ */
+/**
+ * งานซิงก์เต็มรูปแบบ: ส่งคิวก่อน แล้วค่อยเอาข้อมูลจริงมาทับ
+ *
+ * ซิงก์เร็ว (v5): ถ้ามีคิวค้าง จะส่งคิว + ขอข้อมูลล่าสุดใน "คำขอเดียว" (เดิมต้อง 2 รอบ)
+ * หลังบันทึกรายการ (options.quick) ขอแค่เดือนปัจจุบัน + เดือนที่แก้ ไม่ต้องดึง 3 เดือนทุกครั้ง
+ * ถ้ากำลังซิงก์อยู่แล้วมีรายการใหม่เข้ามา จะซิงก์ต่ออีกรอบทันทีหลังรอบแรกจบ (ไม่ค้างรอซิงก์)
+ */
 function fullSync(options) {
   options = options || {};
-  if (state.syncing) return Promise.resolve();
   if (!CONFIG.API_URL || !CONFIG.API_TOKEN) return Promise.resolve();
+  if (state.syncing) {
+    state.syncAgain = true;
+    if (options.notify) state.syncAgainNotify = true;
+    return state.syncPromise || Promise.resolve();
+  }
 
   state.syncing = true;
   renderSyncStatus();
+  var monthsBack = options.quick ? 0 : (CONFIG.MONTHS_TO_CACHE || 2);
 
-  return flushOutbox()
-    .then(function () { return syncFromServer(); })
+  state.syncPromise = flushOutbox(monthsBack)
+    .then(function (res) {
+      // เซิร์ฟเวอร์รุ่นเก่ายังไม่แนบข้อมูลกลับมา → ดึงแยกแบบเดิม
+      if (res && res.bootstrap) return applyBootstrap(res.bootstrap);
+      return syncFromServer();
+    })
     .then(function () { return refreshOutboxCount(); })
     .then(function () {
       state.syncing = false;
@@ -395,7 +467,16 @@ function fullSync(options) {
       renderSyncStatus();
       if (options.notify) showToast('ซิงก์ไม่สำเร็จ: ' + state.lastError);
       console.warn('sync failed', err);
+    })
+    .then(function () {
+      if (state.syncAgain) {
+        var notify = state.syncAgainNotify;
+        state.syncAgain = false;
+        state.syncAgainNotify = false;
+        return fullSync({ quick: true, notify: notify });
+      }
     });
+  return state.syncPromise;
 }
 
 function refreshOutboxCount() {
@@ -425,7 +506,7 @@ function performWrite(action, args, localMutation, label) {
       renderCurrentTab();
       if (isOnline()) {
         // ไม่ await ตรงนี้ เพื่อให้ UI ไม่ค้างรอเน็ต
-        fullSync();
+        fullSync({ quick: true });
       }
     });
 }
@@ -467,12 +548,18 @@ function findAssetLocal(name) {
 }
 
 function recomputeAssetTotals() {
-  var total = 0;
+  var total = 0, grand = 0;
   (state.assetsOverview.groups || []).forEach(function (g) {
-    g.subtotal = (g.assets || []).reduce(function (s, a) { return s + (Number(a.balance) || 0); }, 0);
-    if (g.includeInTotal) total += g.subtotal;
+    g.subtotal = 0;
+    (g.assets || []).forEach(function (a) {
+      var b = Number(a.balance) || 0;
+      g.subtotal += b;
+      grand += b;
+      if (assetCounted(a, g)) total += b;
+    });
   });
   state.assetsOverview.total = total;
+  state.assetsOverview.grandTotal = grand;
 }
 
 function applyAssetDeltaLocal(accountName, delta) {
@@ -713,11 +800,51 @@ function renderHome() {
   container.innerHTML = '';
 
   var days = (month && month.days) ? month.days : [];
+
+  // ----- มุมมองรายการ / ปฏิทิน -----
+  var view = homeView();
+  document.querySelectorAll('#homeViewSegment .seg-btn').forEach(function (b) {
+    b.classList.toggle('active', b.dataset.view === view);
+  });
+  var calHost = $('homeCalendar');
+  var filterBar = $('dayFilterBar');
+  var monthPrefix = state.year + '-' + String(state.monthIndex + 1).padStart(2, '0') + '-';
+  if (state.selectedDay && state.selectedDay.indexOf(monthPrefix) !== 0) state.selectedDay = null;
+
+  if (view === 'calendar') {
+    calHost.hidden = false;
+    calHost.innerHTML = buildCalendarHtml(state.year, state.monthIndex, {
+      selected: state.selectedDay, marks: monthMarks(month)
+    });
+    calHost.querySelectorAll('.cal-cell[data-key]').forEach(function (c) {
+      c.addEventListener('click', function () {
+        // แตะวันเดิมซ้ำ = ยกเลิกเลือก กลับไปดูทั้งเดือน
+        state.selectedDay = (state.selectedDay === c.dataset.key) ? null : c.dataset.key;
+        renderHome();
+      });
+    });
+    if (state.selectedDay) {
+      var sel = state.selectedDay;
+      days = days.filter(function (d) { return d.key === sel; });
+      filterBar.hidden = false;
+      $('dayFilterLabel').textContent = thaiDateLabel(sel);
+    } else {
+      filterBar.hidden = true;
+    }
+  } else {
+    calHost.hidden = true;
+    filterBar.hidden = true;
+  }
+
   if (!days.length) {
     empty.hidden = false;
-    empty.textContent = month
-      ? 'ยังไม่มีรายการในเดือนนี้ กดปุ่ม + เพื่อเริ่มบันทึก'
-      : (isOnline() ? 'กำลังโหลดข้อมูลเดือนนี้...' : 'ยังไม่มีข้อมูลเดือนนี้ในเครื่อง ต่อเน็ตแล้วกด ⟳ เพื่อดึงข้อมูล');
+    if (view === 'calendar' && state.selectedDay && month) {
+      empty.textContent = 'ไม่มีรายการในวันนี้ — กดปุ่ม + เพื่อบันทึกของวันที่เลือก';
+    } else {
+      empty.textContent = month
+        ? 'ยังไม่มีรายการในเดือนนี้ กดปุ่ม + เพื่อเริ่มบันทึก'
+        : (isOnline() ? 'กำลังโหลดข้อมูลเดือนนี้...' : 'ยังไม่มีข้อมูลเดือนนี้ในเครื่อง ต่อเน็ตแล้วกด ⟳ เพื่อดึงข้อมูล');
+    }
     return;
   }
   empty.hidden = true;
@@ -774,6 +901,137 @@ function renderHome() {
   });
 }
 
+// ===================== ปฏิทิน (เริ่มสัปดาห์วันอาทิตย์) =====================
+
+var CAL_HEAD = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+var HOME_VIEW_KEY = 'moo-mee-tang-home-view';
+
+function dateKey(y, m, d) {
+  return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+
+/** ย่อตัวเลขให้พอดีช่องปฏิทิน เช่น 1,250 / 12.5k / 125k */
+function formatCompact(n) {
+  n = Math.round(Number(n) || 0);
+  if (n >= 100000) return Math.round(n / 1000) + 'k';
+  if (n >= 10000) return (Math.round(n / 100) / 10).toString().replace(/\.0$/, '') + 'k';
+  return n.toLocaleString('en-US');
+}
+
+/**
+ * สร้างตารางปฏิทิน 1 เดือน
+ * opts: { selected, marks: { 'yyyy-mm-dd': {income, expense} }, compact }
+ */
+function buildCalendarHtml(year, monthIndex, opts) {
+  opts = opts || {};
+  var first = new Date(year, monthIndex, 1).getDay();      // 0 = อาทิตย์ → ช่องแรก
+  var days = new Date(year, monthIndex + 1, 0).getDate();
+  var today = todayStr();
+  var html = '<div class="cal-grid' + (opts.compact ? ' compact' : '') + '">';
+  CAL_HEAD.forEach(function (h, i) {
+    html += '<div class="cal-head' + (i === 0 ? ' sun' : (i === 6 ? ' sat' : '')) + '">' + h + '</div>';
+  });
+  for (var b = 0; b < first; b++) html += '<div class="cal-cell blank"></div>';
+  for (var d = 1; d <= days; d++) {
+    var key = dateKey(year, monthIndex, d);
+    var dow = (first + d - 1) % 7;
+    var mk = opts.marks && opts.marks[key];
+    var cls = 'cal-cell' + (key === today ? ' today' : '') + (key === opts.selected ? ' selected' : '') +
+      (dow === 0 ? ' sun' : '') + (mk ? ' has-data' : '') + (key > today ? ' future' : '');
+    html += '<button type="button" class="' + cls + '" data-key="' + key + '"><span class="cal-num">' + d + '</span>';
+    if (mk && !opts.compact) {
+      if (mk.expense) html += '<span class="cal-amt exp">-' + formatCompact(mk.expense) + '</span>';
+      if (mk.income) html += '<span class="cal-amt inc">+' + formatCompact(mk.income) + '</span>';
+    } else if (mk && opts.compact) {
+      html += '<span class="cal-dot"></span>';
+    }
+    html += '</button>';
+  }
+  return html + '</div>';
+}
+
+function monthMarks(month) {
+  var marks = {};
+  ((month && month.days) || []).forEach(function (day) {
+    if ((day.items || []).length) marks[day.key] = { income: day.income, expense: day.expense };
+  });
+  return marks;
+}
+
+function homeView() {
+  try { return localStorage.getItem(HOME_VIEW_KEY) || 'list'; } catch (e) { return 'list'; }
+}
+
+function setHomeView(v) {
+  try { localStorage.setItem(HOME_VIEW_KEY, v); } catch (e) { /* ไม่เป็นไร */ }
+  // เข้าโหมดปฏิทินในเดือนปัจจุบัน → เลือก "วันนี้" ไว้ให้เลย
+  if (v === 'calendar' && !state.selectedDay) {
+    var t = todayStr();
+    if (t.indexOf(state.year + '-' + String(state.monthIndex + 1).padStart(2, '0')) === 0) state.selectedDay = t;
+  }
+  renderHome();
+}
+
+/** วันที่ตั้งต้นของรายการใหม่: วันที่เลือกในปฏิทิน (ถ้ามี) ไม่งั้นวันนี้ */
+function defaultNewTxDate() {
+  if (homeView() === 'calendar' && state.selectedDay && state.tab === 'home') return state.selectedDay;
+  return todayStr();
+}
+
+function thaiDateLabel(str) {
+  var d = parseDateStr(str);
+  var label = THAI_DAYS_SHORT[d.getDay()] + ' ' + d.getDate() + ' ' + THAI_MONTHS_SHORT[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+  var t = todayStr();
+  if (str === t) label += ' (วันนี้)';
+  else {
+    var y = new Date(); y.setDate(y.getDate() - 1);
+    if (str === dateKey(y.getFullYear(), y.getMonth(), y.getDate())) label += ' (เมื่อวาน)';
+  }
+  return label;
+}
+
+// ----- ตัวเลือกวันที่ในฟอร์มรายการ (แทนปฏิทินของ iPhone ที่เริ่มวันจันทร์ตามการตั้งค่าเครื่อง) -----
+
+var datePicker = { year: 0, monthIndex: 0 };
+
+function setTxDate(str) {
+  $('txDate').value = str;
+  $('txDateBtn').textContent = '📅 ' + thaiDateLabel(str);
+  $('txDatePicker').hidden = true;
+  $('txDateBtn').classList.remove('open');
+}
+
+function toggleDatePicker() {
+  var pk = $('txDatePicker');
+  if (!pk.hidden) { pk.hidden = true; $('txDateBtn').classList.remove('open'); return; }
+  var d = parseDateStr($('txDate').value || todayStr());
+  datePicker.year = d.getFullYear();
+  datePicker.monthIndex = d.getMonth();
+  renderDatePicker();
+  pk.hidden = false;
+  $('txDateBtn').classList.add('open');
+}
+
+function renderDatePicker() {
+  $('dpLabel').textContent = THAI_MONTHS_FULL[datePicker.monthIndex] + ' ' + (datePicker.year + 543);
+  var grid = $('dpGrid');
+  grid.innerHTML = buildCalendarHtml(datePicker.year, datePicker.monthIndex, {
+    selected: $('txDate').value,
+    compact: true,
+    marks: monthMarks(state.months[monthKey(datePicker.year, datePicker.monthIndex)])
+  });
+  grid.querySelectorAll('.cal-cell[data-key]').forEach(function (c) {
+    c.addEventListener('click', function () { setTxDate(c.dataset.key); });
+  });
+}
+
+function shiftDatePicker(delta) {
+  datePicker.monthIndex += delta;
+  if (datePicker.monthIndex < 0) { datePicker.monthIndex = 11; datePicker.year--; }
+  if (datePicker.monthIndex > 11) { datePicker.monthIndex = 0; datePicker.year++; }
+  renderDatePicker();
+}
+
 /** ข้อมูลยืนยันตัวรายการ: เวลาบันทึก + ค่าเดิม — เซิร์ฟเวอร์ใช้หาแถวให้ถูกแม้แถวจะขยับไปแล้ว */
 function expectedOf(item) {
   return { key: item.key || '', type: item.type, category: item.category, amount: item.amount };
@@ -795,12 +1053,16 @@ function confirmDeleteTx(item) {
 
 function renderAssets() {
   var data = state.assetsOverview || { total: 0, groups: [] };
+  // คำนวณใหม่ในเครื่องเสมอ: รองรับข้อมูลจากเซิร์ฟเวอร์รุ่นเก่าที่ยังไม่รู้จักการเลือกรายตัว
+  recomputeAssetTotals();
   $('assetsTotal').textContent = formatBaht(data.total);
-  var grand = (data.groups || []).reduce(function (sum, g) { return sum + (Number(g.subtotal) || 0); }, 0);
-  $('assetsGrandTotal').textContent = formatBaht(grand);
+  $('assetsGrandTotal').textContent = formatBaht(data.grandTotal);
+
+  var TAG = { none: 'ไม่รวมยอด', some: 'รวมบางส่วน', all: '' };
 
   $('assetsByGroup').innerHTML = (data.groups || []).map(function (g) {
-    var note = g.includeInTotal ? '' : ' (ไม่รวมยอด)';
+    var st = groupCountState(g);
+    var note = st === 'all' ? '' : ' (' + TAG[st] + ')';
     return '<div class="asset-type-pill">' + escapeHtml(g.name + note) +
       ': <b>' + escapeHtml(formatBaht(g.subtotal)) + '</b></div>';
   }).join('');
@@ -811,24 +1073,29 @@ function renderAssets() {
   (data.groups || []).forEach(function (g) {
     var block = document.createElement('div');
     block.className = 'asset-group-block';
+    var st = groupCountState(g);
 
     var header = document.createElement('div');
     header.className = 'asset-group-header';
     header.innerHTML = '<span>' + escapeHtml(g.name) +
-      (g.includeInTotal ? '' : '<span class="excluded-tag">ไม่รวมยอด</span>') + '</span>' +
+      (st === 'all' ? '' : '<span class="excluded-tag">' + TAG[st] + '</span>') + '</span>' +
       '<span>' + escapeHtml(formatBaht(g.subtotal)) + '</span>';
     block.appendChild(header);
 
     (g.assets || []).forEach(function (a, idx) {
+      var counted = assetCounted(a, g);
       var card = document.createElement('div');
-      card.className = 'asset-card';
+      // ป้าย "ไม่นับ" แสดงเฉพาะกลุ่มที่นับบางส่วน (ถ้าทั้งกลุ่มไม่นับ ป้ายที่หัวกลุ่มบอกแล้ว)
+      card.className = 'asset-card' + (counted ? '' : ' not-counted');
       card.innerHTML =
         '<div class="asset-order-btns">' +
         '  <button class="order-btn up"' + (idx === 0 ? ' disabled' : '') + '>▲</button>' +
         '  <button class="order-btn down"' + (idx === g.assets.length - 1 ? ' disabled' : '') + '>▼</button>' +
         '</div>' +
         '<div class="asset-main">' +
-        '  <div class="asset-name">' + escapeHtml(a.name) + '</div>' +
+        '  <div class="asset-icon">' + escapeHtml(assetIcon(a)) + '</div>' +
+        '  <div class="asset-name">' + escapeHtml(a.name) +
+             (!counted && st === 'some' ? '<span class="excluded-tag small">ไม่นับ</span>' : '') + '</div>' +
         '  <div class="asset-balance">' + escapeHtml(formatBaht(a.balance)) + '</div>' +
         '</div>';
 
@@ -963,6 +1230,55 @@ function renderThemes() {
   });
 }
 
+// ----- เรียงลำดับหมวดหมู่ -----
+// ขยับในหน้าต่างได้หลายครั้ง แล้วกด "บันทึกลำดับ" ทีเดียว → ส่งขึ้นชีตเป็นคำสั่งเดียว
+
+var reorderEdit = { type: 'expense', list: [] };
+
+function openReorderModal(type) {
+  reorderEdit.type = type;
+  reorderEdit.list = (state.categories[type] || []).slice();
+  $('reorderModalTitle').textContent = 'เรียงลำดับหมวด' + (type === 'income' ? 'รายรับ' : 'รายจ่าย');
+  renderReorderList();
+  openModal('reorderModal');
+}
+
+function renderReorderList() {
+  var list = reorderEdit.list;
+  var el = $('reorderList');
+  el.innerHTML = list.map(function (c, i) {
+    return '<div class="reorder-row">' +
+      '<span class="reorder-num">' + (i + 1) + '</span>' +
+      '<span class="cat-icon">' + escapeHtml(c.icon || categoryIcon(reorderEdit.type, '')) + '</span>' +
+      '<span class="reorder-name">' + escapeHtml(c.name) + '</span>' +
+      '<button class="order-btn big" data-i="' + i + '" data-d="-1"' + (i === 0 ? ' disabled' : '') + ' aria-label="เลื่อนขึ้น">▲</button>' +
+      '<button class="order-btn big" data-i="' + i + '" data-d="1"' + (i === list.length - 1 ? ' disabled' : '') + ' aria-label="เลื่อนลง">▼</button>' +
+      '</div>';
+  }).join('');
+  el.querySelectorAll('.order-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var i = Number(btn.dataset.i), j = i + Number(btn.dataset.d);
+      if (j < 0 || j >= list.length) return;
+      var tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+      renderReorderList();
+    });
+  });
+}
+
+function saveReorder() {
+  var type = reorderEdit.type;
+  var names = reorderEdit.list.map(function (c) { return c.name; });
+  var before = (state.categories[type] || []).map(function (c) { return c.name; });
+  if (names.join('\u0000') === before.join('\u0000')) { closeModal('reorderModal'); return; }
+
+  performWrite('reorderCategories', [type, names], function () {
+    state.categories[type] = reorderEdit.list.slice();
+  }, 'เรียงลำดับหมวดหมู่').then(function () {
+    closeModal('reorderModal');
+    showToast('บันทึกลำดับแล้ว');
+  });
+}
+
 // ----- หน้าต่างเพิ่ม/แก้ไขหมวดหมู่ -----
 
 var categoryEdit = { type: 'expense', original: null, icon: '' };
@@ -1084,7 +1400,7 @@ function populateAccountSelect() {
   var assets = allAssetsFlat();
   sel.innerHTML = assets.length
     ? assets.map(function (a) {
-        return '<option value="' + escapeHtml(a.name) + '">' + escapeHtml(a.name) + '</option>';
+        return '<option value="' + escapeHtml(a.name) + '">' + escapeHtml(assetIcon(a) + ' ' + a.name) + '</option>';
       }).join('')
     : '<option value="">— เพิ่มสินทรัพย์ในแท็บกระเป๋าเงินก่อน —</option>';
   sel.selectedIndex = 0;
@@ -1140,7 +1456,7 @@ function openTxModal(edit) {
     var it = txEdit.item;
     setTxType(it.type);
     populateAccountSelect();
-    $('txDate').value = txEdit.dateStr;
+    setTxDate(txEdit.dateStr);
     $('txAmount').value = it.amount;
     $('txNote').value = it.note || '';
     // หมวด/บัญชีที่ถูกลบไปแล้วก็ยังแสดงค่าเดิมให้ ไม่เปลี่ยนเองโดยไม่รู้ตัว
@@ -1149,7 +1465,7 @@ function openTxModal(edit) {
   } else {
     setTxType(state.lastTxType || 'expense');
     populateAccountSelect();
-    $('txDate').value = todayStr();
+    setTxDate(defaultNewTxDate());
     $('txAmount').value = '';
     $('txNote').value = '';
   }
@@ -1192,6 +1508,7 @@ function saveTransaction() {
   state.year = d.getFullYear();
   state.monthIndex = d.getMonth();
   state.lastTxType = tx.type;
+  if (homeView() === 'calendar') state.selectedDay = tx.dateStr;
 
   performWrite('addTransaction', [tx], function () { addTransactionLocal(tx); },
     'บันทึก ' + tx.category
@@ -1259,7 +1576,8 @@ function saveAsset() {
   if (!group) { showToast('กรุณาระบุกลุ่ม'); return; }
   if (findAssetLocal(name)) { showToast('มีสินทรัพย์ชื่อนี้อยู่แล้ว'); return; }
 
-  var args = [name, group];
+  var icon = state.newAssetIcon || '';
+  var args = icon ? [name, group, icon] : [name, group];
   performWrite('addAsset', args, function () {
     var g = findGroupLocal(group);
     if (!g) {
@@ -1267,7 +1585,7 @@ function saveAsset() {
       state.assetsOverview.groups.push(g);
     }
     var maxOrder = (g.assets || []).reduce(function (m, a) { return Math.max(m, a.order || 0); }, 0);
-    g.assets.push({ name: name, group: group, balance: 0, order: maxOrder + 1 });
+    g.assets.push({ name: name, group: group, balance: 0, order: maxOrder + 1, icon: icon, include: null });
     recomputeAssetTotals();
   }, 'เพิ่มสินทรัพย์ ' + name)
     .then(function () {
@@ -1282,6 +1600,7 @@ function saveAsset() {
       $('assetName').value = '';
       $('assetNewGroupName').value = '';
       $('assetInitialBalance').value = '';
+      state.newAssetIcon = '';
       closeModal('assetModal');
       showToast('เพิ่มสินทรัพย์แล้ว');
     });
@@ -1291,8 +1610,74 @@ function openEditBalanceModal(asset, group) {
   state.editingAssetName = asset.name;
   $('editBalanceTitle').textContent = 'จัดการ: ' + asset.name;
   $('editBalanceValue').value = asset.balance;
+  $('editAssetIconBtn').textContent = assetIcon(asset);
+  renderAssetIncludeControl();
   populateGroupSelects(group ? group.name : asset.group);
   openModal('editBalanceModal');
+}
+
+/** สวิตช์ "นับใน เงินที่ใช้ได้" ของสินทรัพย์ที่กำลังแก้ */
+function renderAssetIncludeControl() {
+  var found = findAssetLocal(state.editingAssetName);
+  if (!found) return;
+  var counted = assetCounted(found.asset, found.group);
+  $('editAssetInclude').checked = counted;
+  var followsGroup = !(found.asset.include === true || found.asset.include === false);
+  $('editAssetIncludeHint').textContent = followsGroup
+    ? 'ตอนนี้ทำตามกลุ่ม "' + found.group.name + '" (' + (found.group.includeInTotal ? 'นับ' : 'ไม่นับ') + ')'
+    : 'เลือกแยกจากกลุ่ม "' + found.group.name + '" (กลุ่ม' + (found.group.includeInTotal ? 'นับ' : 'ไม่นับ') + ')';
+}
+
+function setAssetIncludeHandler(checked) {
+  var name = state.editingAssetName;
+  var found = findAssetLocal(name);
+  if (!found) return;
+  // ถ้าตรงกับค่าของกลุ่ม ให้กลับไป "ทำตามกลุ่ม" — สวิตช์กลุ่มจะยังคุมตัวนี้ได้ในภายหลัง
+  var value = (checked === !!found.group.includeInTotal) ? null : checked;
+  performWrite('setAssetIncludeInTotal', [name, value], function () {
+    var f = findAssetLocal(name);
+    if (f) { f.asset.include = value; recomputeAssetTotals(); }
+  }, 'ตั้งค่านับยอด ' + name).then(function () {
+    renderAssetIncludeControl();
+    showToast(checked ? 'นับ ' + name + ' ในเงินที่ใช้ได้แล้ว' : 'ไม่นับ ' + name + ' ในเงินที่ใช้ได้แล้ว');
+  });
+}
+
+// ----- ตัวเลือกไอคอน (หน้าต่างแยก ใช้กับสินทรัพย์) -----
+
+var iconPickerCallback = null;
+
+function openIconPicker(title, current, library, onPick) {
+  iconPickerCallback = onPick;
+  $('iconPickerTitle').textContent = title;
+  var host = $('iconPickerModalBody');
+  host.innerHTML = library.map(function (g) {
+    return '<div class="icon-group-title">' + escapeHtml(g.name) + '</div><div class="icon-grid">' +
+      g.icons.map(function (ic) {
+        return '<button class="icon-opt' + (ic === current ? ' selected' : '') + '" data-ic="' +
+          escapeHtml(ic) + '" aria-label="' + escapeHtml(ic) + '">' + escapeHtml(ic) + '</button>';
+      }).join('') + '</div>';
+  }).join('');
+  host.querySelectorAll('.icon-opt').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      closeModal('iconPickerModal');
+      if (iconPickerCallback) iconPickerCallback(btn.dataset.ic);
+    });
+  });
+  openModal('iconPickerModal');
+}
+
+function changeAssetIcon() {
+  var name = state.editingAssetName;
+  var found = findAssetLocal(name);
+  if (!found) return;
+  openIconPicker('ไอคอนของ ' + name, assetIcon(found.asset), ASSET_ICON_LIBRARY, function (ic) {
+    $('editAssetIconBtn').textContent = ic;
+    performWrite('setAssetIcon', [name, ic], function () {
+      var f = findAssetLocal(name);
+      if (f) f.asset.icon = ic;
+    }, 'เปลี่ยนไอคอน ' + name).then(function () { showToast('เปลี่ยนไอคอนแล้ว'); });
+  });
 }
 
 function saveEditBalance() {
@@ -1353,12 +1738,16 @@ function renderGroupsManageUI() {
   var el = $('groupsManageList');
 
   el.innerHTML = groups.map(function (g, idx) {
+    var list = g.assets || [];
+    var st = groupCountState(g);
+    var n = list.filter(function (a) { return assetCounted(a, g); }).length;
     return '<div class="group-row" data-name="' + escapeHtml(g.name) + '">' +
       '<div class="group-order-btns">' +
       '  <button class="order-btn up"' + (idx === 0 ? ' disabled' : '') + '>▲</button>' +
       '  <button class="order-btn down"' + (idx === groups.length - 1 ? ' disabled' : '') + '>▼</button>' +
       '</div>' +
-      '<div class="group-name">' + escapeHtml(g.name) + '</div>' +
+      '<div class="group-name">' + escapeHtml(g.name) +
+        (st === 'some' ? '<div class="group-sub">นับ ' + n + ' จาก ' + list.length + ' รายการ</div>' : '') + '</div>' +
       '<label class="switch"><input type="checkbox" class="include-toggle"' +
         (g.includeInTotal ? ' checked' : '') + '><span class="switch-slider"></span></label>' +
       '<button class="group-delete" aria-label="ลบกลุ่ม">🗑</button>' +
@@ -1375,7 +1764,12 @@ function renderGroupsManageUI() {
       var checked = e.target.checked;
       performWrite('setAssetGroupIncludeInTotal', [name, checked], function () {
         var g = findGroupLocal(name);
-        if (g) { g.includeInTotal = checked; recomputeAssetTotals(); }
+        if (g) {
+          g.includeInTotal = checked;
+          // สวิตช์กลุ่ม = ตั้งทั้งกลุ่ม: ล้างค่าที่เคยเลือกแยกรายตัว (ตรงกับที่เซิร์ฟเวอร์ทำ)
+          (g.assets || []).forEach(function (a) { a.include = null; });
+          recomputeAssetTotals();
+        }
       }, 'ตั้งค่ารวมยอดกลุ่ม ' + name).then(renderGroupsManageUI);
     });
 
@@ -1477,7 +1871,49 @@ function bindEvents() {
   on('addAssetBtn', 'click', function () {
     populateGroupSelects();
     $('newGroupNameRow').hidden = true;
+    state.newAssetIcon = '';
+    $('newAssetIconBtn').textContent = '💰';
     openModal('assetModal');
+  });
+  on('newAssetIconBtn', 'click', function () {
+    var guess = state.newAssetIcon || defaultAssetIcon({ name: $('assetName').value, group: $('assetGroupSelect').value });
+    openIconPicker('เลือกไอคอนสินทรัพย์', guess, ASSET_ICON_LIBRARY, function (ic) {
+      state.newAssetIcon = ic;
+      $('newAssetIconBtn').textContent = ic;
+    });
+  });
+  // ยังไม่ได้เลือกไอคอนเอง → แสดงไอคอนที่เดาจากชื่อ/กลุ่มให้เห็นก่อน
+  ['assetName', 'assetGroupSelect'].forEach(function (id) {
+    on(id, id === 'assetName' ? 'input' : 'change', function () {
+      if (!state.newAssetIcon) {
+        $('newAssetIconBtn').textContent = defaultAssetIcon({ name: $('assetName').value, group: $('assetGroupSelect').value });
+      }
+    });
+  });
+  on('editAssetIconBtn', 'click', changeAssetIcon);
+  on('editAssetInclude', 'change', function (e) { setAssetIncludeHandler(e.target.checked); });
+  on('closeIconPickerBtn', 'click', function () { closeModal('iconPickerModal'); });
+
+  // เรียงลำดับหมวดหมู่
+  document.querySelectorAll('[data-reorder]').forEach(function (btn) {
+    btn.addEventListener('click', function () { openReorderModal(btn.dataset.reorder); });
+  });
+  on('closeReorderModalBtn', 'click', function () { closeModal('reorderModal'); });
+  on('saveReorderBtn', 'click', saveReorder);
+
+  // ปฏิทินหน้าหลัก + ตัวเลือกวันที่ในฟอร์ม
+  on('homeViewSegment', 'click', function (e) {
+    var btn = e.target.closest('.seg-btn');
+    if (btn) setHomeView(btn.dataset.view);
+  });
+  on('clearDayFilterBtn', 'click', function () { state.selectedDay = null; renderHome(); });
+  on('txDateBtn', 'click', toggleDatePicker);
+  on('dpPrev', 'click', function () { shiftDatePicker(-1); });
+  on('dpNext', 'click', function () { shiftDatePicker(1); });
+  on('dpToday', 'click', function () { setTxDate(todayStr()); });
+  on('dpYesterday', 'click', function () {
+    var y = new Date(); y.setDate(y.getDate() - 1);
+    setTxDate(dateKey(y.getFullYear(), y.getMonth(), y.getDate()));
   });
   on('closeAssetModalBtn', 'click', function () { closeModal('assetModal'); });
   on('saveAssetBtn', 'click', saveAsset);
@@ -1624,7 +2060,7 @@ function init() {
   $('app').hidden = false;
 
   bindEvents();
-  $('txDate').value = todayStr();
+  setTxDate(todayStr());
   $('appVersion').textContent = APP_VERSION;
 
   openDb()
