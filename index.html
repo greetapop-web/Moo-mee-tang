@@ -65,7 +65,7 @@
       <!-- หน้ารวม (รายรับ-จ่ายรายวัน) -->
       <section id="tab-home" class="tab-panel active">
         <div class="summary-card has-pig">
-          <img class="pig-deco pig-home mascot" src="img/pig-card.png" alt="">
+          <img class="pig-deco pig-home mascot mascot-tap" src="img/pig-card.png" alt="">
           <div class="balance-label">คงเหลือสุทธิเดือนนี้</div>
           <div class="balance-amount" id="homeBalance">฿0</div>
           <div class="summary-row">
@@ -79,14 +79,14 @@
           <button id="clearDayFilterBtn" class="chip-btn">ดูทั้งเดือน</button>
         </div>
         <div id="dayList" class="day-list"></div>
-        <img id="homeEmptyPig" class="empty-pig mascot" src="img/pig-cheer.png" alt="" hidden>
+        <img id="homeEmptyPig" class="empty-pig mascot mascot-tap" src="img/pig-cheer.png" alt="" hidden>
         <div id="homeEmpty" class="empty-state" hidden>ยังไม่มีรายการในเดือนนี้ กดปุ่ม ✏️ เพื่อเริ่มบันทึก</div>
       </section>
 
       <!-- หน้ารวมสินทรัพย์ -->
       <section id="tab-assets" class="tab-panel">
         <div class="summary-card has-pig">
-          <img class="pig-deco pig-assets mascot" src="img/pig-hug.png" alt="">
+          <img class="pig-deco pig-assets mascot mascot-tap" src="img/pig-hug.png" alt="">
           <div class="balance-label">เงินที่ใช้ได้</div>
           <div class="balance-amount text-gold" id="assetsTotal">฿0</div>
           <div class="grand-total">สินทรัพย์ทั้งหมด (รวมทุกกลุ่ม) <b id="assetsGrandTotal">฿0</b></div>
@@ -120,10 +120,14 @@
 
       <!-- เพิ่มเติม: เมนูไอคอน + หน้าย่อย -->
       <section id="tab-more" class="tab-panel">
+        <div id="moreHello" class="more-hello mascot">
+          <img class="mascot-tap" src="img/pig-cheer.png" alt="">
+          <div><b>สวัสดีค่ะ</b><span>เก็บทีละนิด... ชีวิตดีขึ้นแน่นอน 💚</span></div>
+        </div>
         <div id="moreMenu" class="more-menu"></div>
         <div class="more-page" data-page="categories" hidden>
           <button class="back-btn" data-back="1">‹ เพิ่มเติม</button>
-          <h2 class="page-title">หมวดหมู่</h2>
+          <h2 class="page-title"><img class="title-pig mascot" src="img/pig-peek.png" alt="">หมวดหมู่</h2>
         <h3 class="h3-row"><span>หมวดหมู่รายรับ <span class="h3-hint">แตะเพื่อแก้ไข</span></span><button class="chip-btn" data-reorder="income">⇅ เรียงลำดับ</button></h3>
         <div id="incomeCatList" class="cat-grid"></div>
 
@@ -133,14 +137,14 @@
         </div>
         <div class="more-page" data-page="theme" hidden>
           <button class="back-btn" data-back="1">‹ เพิ่มเติม</button>
-          <h2 class="page-title">ธีมสี</h2>
+          <h2 class="page-title"><img class="title-pig mascot" src="img/pig-peek.png" alt="">ธีมสี</h2>
         <h3>ธีมสี <span class="h3-hint">ตั้งค่าเฉพาะเครื่องนี้</span></h3>
         <div id="themeList" class="theme-list"></div>
 
         </div>
         <div class="more-page" data-page="settings" hidden>
           <button class="back-btn" data-back="1">‹ เพิ่มเติม</button>
-          <h2 class="page-title">การตั้งค่า</h2>
+          <h2 class="page-title"><img class="title-pig mascot" src="img/pig-peek.png" alt="">การตั้งค่า</h2>
           <div class="setting-row">
             <div><b>สัมผัสตอบสนอง</b><div class="setting-sub">สั่นเบา ๆ เวลาแตะปุ่ม (iPhone ที่ใช้ iOS 18 ขึ้นไป)</div></div>
             <label class="switch"><input type="checkbox" id="hapticsToggle"><span class="switch-slider"></span></label>
@@ -152,7 +156,7 @@
         </div>
         <div class="more-page" data-page="sync" hidden>
           <button class="back-btn" data-back="1">‹ เพิ่มเติม</button>
-          <h2 class="page-title">ซิงก์ข้อมูล</h2>
+          <h2 class="page-title"><img class="title-pig mascot" src="img/pig-peek.png" alt="">ซิงก์ข้อมูล</h2>
         <div id="syncDetail" class="about-text"></div>
         <button class="secondary-btn" id="forceSyncBtn">ซิงก์ข้อมูลกับ Google Sheet เดี๋ยวนี้</button>
         <button class="danger-btn" id="resetConnectionBtn">ตัดการเชื่อมต่อ / ใส่โทเค็นใหม่</button>
@@ -161,8 +165,8 @@
         </div>
         <div class="more-page" data-page="about" hidden>
           <button class="back-btn" data-back="1">‹ เพิ่มเติม</button>
-          <h2 class="page-title">เกี่ยวกับ</h2>
-        <img class="about-pig mascot" src="img/pig-hug.png" alt="">
+          <h2 class="page-title"><img class="title-pig mascot" src="img/pig-peek.png" alt="">เกี่ยวกับ</h2>
+        <img class="about-pig mascot mascot-tap" src="img/pig-hug.png" alt="">
         <p class="about-text">
           แอปนี้เก็บข้อมูลไว้ในเครื่องด้วย จึงเปิดดูและบันทึกรายการได้แม้ไม่มีเน็ต
           รายการที่บันทึกตอนออฟไลน์จะเข้าคิวไว้ แล้วส่งขึ้น Google Sheet ให้อัตโนมัติเมื่อกลับมามีเน็ต
@@ -215,14 +219,6 @@
         </div>
       </div>
 
-      <label>จำนวนเงิน</label>
-      <input type="number" id="txAmount" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
-
-      <div id="txCategoryRow">
-        <label>หมวดหมู่</label>
-        <select id="txCategory"></select>
-      </div>
-
       <label id="txAccountLabel">บัญชี/สินทรัพย์</label>
       <select id="txAccount"></select>
 
@@ -230,6 +226,14 @@
         <div class="transfer-arrow">↓</div>
         <label style="margin-top:0;">ไปบัญชี</label>
         <select id="txToAccount"></select>
+      </div>
+
+      <label>จำนวนเงิน</label>
+      <input type="number" id="txAmount" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+
+      <div id="txCategoryRow">
+        <label>หมวดหมู่</label>
+        <select id="txCategory"></select>
       </div>
 
       <label>บันทึกเพิ่มเติม</label>

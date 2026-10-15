@@ -459,3 +459,36 @@ html:not(.no-mascot) #tab-assets .grand-total{padding-right:80px;}
 .setting-row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--bg-card);
   border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-top:12px;font-size:14px;}
 .setting-sub{font-size:12px;color:var(--text-secondary);margin-top:3px;}
+
+/* ===== v9: หมูทุกหน้า + ความน่ารัก ===== */
+.pig-deco{pointer-events:auto;}
+.mascot-tap{cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+@keyframes pig-bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-2deg)}}
+@keyframes pig-boing{0%{transform:scale(1)}30%{transform:scale(1.15,.88)}55%{transform:scale(.92,1.1) translateY(-8px)}80%{transform:scale(1.04,.97)}100%{transform:scale(1)}}
+.pig-deco,.empty-pig,.about-pig,.more-hello img{animation:pig-bob 3.2s ease-in-out infinite;}
+.mascot-tap.boing{animation:pig-boing .55s ease-out;}
+@media (prefers-reduced-motion:reduce){.pig-deco,.empty-pig,.about-pig,.more-hello img,.mascot-tap.boing{animation:none;}}
+
+/* หมูโผล่เหนือทุกหน้าต่าง */
+.modal{position:relative;overflow:visible;padding:0;display:flex;flex-direction:column;}
+.modal-scroll{padding:20px 20px calc(20px + env(safe-area-inset-bottom));max-height:86vh;overflow-y:auto;border-radius:20px 20px 0 0;}
+.modal-pig{position:absolute;top:-44px;right:64px;width:96px;z-index:1;}
+html.no-mascot .modal-pig{display:none;}
+
+/* แบนเนอร์ทักทายหน้าเพิ่มเติม */
+.more-hello{display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);
+  border-radius:22px;padding:8px 16px 8px 8px;margin-bottom:14px;}
+.more-hello img{width:84px;flex-shrink:0;}
+.more-hello b{display:block;font-size:17px;}
+.more-hello span{font-size:13px;color:var(--text-secondary);}
+.page-title{display:flex;align-items:flex-end;gap:8px;}
+.title-pig{width:64px;order:2;margin-left:auto;}
+
+/* ===== v9: โอน = สีฟ้า/น้ำเงิน ===== */
+:root{--transfer:#4a9ff5;}
+:root[data-theme="pink"],:root[data-theme="mint"],:root[data-theme="sky"],:root[data-theme="piggy"]{--transfer:#2f7fd8;}
+#txTypeSegment .seg-btn.active[data-type="transfer"]{background:var(--transfer);color:#fff;}
+#txModal.type-transfer .tx-save{background:var(--transfer);color:#fff;}
+#txModal.type-transfer #txAmount,#txModal.type-transfer select{border-color:color-mix(in srgb, var(--transfer) 55%, var(--border));}
+.transfer-arrow{color:var(--transfer);}
+.tx-amount.transfer{color:var(--transfer);}

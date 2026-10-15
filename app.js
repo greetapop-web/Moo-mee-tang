@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-14-pwa-8';
+var APP_VERSION = '2026-10-15-pwa-9';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -100,29 +100,38 @@ applyMascot();
  * การแตะสวิตช์แบบ <input type="checkbox" switch> จะมีการสั่นแบบระบบ — เราจึงแอบกดสวิตช์ที่ซ่อนไว้
  * ต้องเรียกระหว่างที่ผู้ใช้กำลังแตะอยู่เท่านั้น (ในตัวจัดการ click)
  */
-var hapticEl = null;
+var hapticBusy = false;
 function haptic() {
-  if (!prefOn(HAPTICS_KEY)) return;
+  if (!prefOn(HAPTICS_KEY) || hapticBusy) return;
   try {
     if (navigator.vibrate) { navigator.vibrate(8); return; }
-    if (!hapticEl) {
-      hapticEl = document.createElement('label');
-      hapticEl.setAttribute('aria-hidden', 'true');
-      hapticEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;';
-      var input = document.createElement('input');
-      input.type = 'checkbox';
-      input.setAttribute('switch', '');
-      input.tabIndex = -1;
-      hapticEl.appendChild(input);
-      document.body.appendChild(hapticEl);
-    }
-    hapticEl.click();
+    // วิธีเดียวกับไลบรารี ios-haptics: สร้างสวิตช์ซ่อนใน <head> กด 1 ครั้งแล้วลบทิ้ง
+    // (ไม่วางใน body และไม่ค้างไว้ จึงไม่ไปแย่งโฟกัสช่องเลือก/ช่องพิมพ์)
+    hapticBusy = true;
+    var label = document.createElement('label');
+    label.setAttribute('aria-hidden', 'true');
+    label.style.display = 'none';
+    var input = document.createElement('input');
+    input.type = 'checkbox';
+    input.setAttribute('switch', '');
+    label.appendChild(input);
+    document.head.appendChild(label);
+    label.click();
+    document.head.removeChild(label);
   } catch (e) { /* ไม่รองรับ ก็แค่ไม่สั่น */ }
+  hapticBusy = false;
 }
-var HAPTIC_TARGETS = 'button, .cat-tile, .tx-row, .asset-main, label.switch, .seg-btn, select';
+// เฉพาะปุ่มกด — ไม่รวมช่องเลือก (select) และช่องพิมพ์ เพราะบน iPhone จะทำให้รายการตัวเลือกปิดทันที
+var HAPTIC_TARGETS = 'button, .cat-tile, .tx-row, .asset-main, .seg-btn, .menu-tile, .cal-cell, .mascot-tap';
 document.addEventListener('click', function (e) {
-  if (hapticEl && hapticEl.contains(e.target)) return;   // คลิกที่เราสร้างเอง ไม่นับซ้ำ
-  if (e.target.closest && e.target.closest(HAPTIC_TARGETS)) haptic();
+  if (hapticBusy) return;
+  var t = e.target;
+  if (!t || !t.closest || t.closest('select, input, textarea, label.switch')) return;
+  if (t.closest(HAPTIC_TARGETS)) haptic();
+}, true);
+// สวิตช์ในแอปเอง: สั่นตอนค่าเปลี่ยน (ไม่ไปกดสวิตช์ซ้อน)
+document.addEventListener('change', function (e) {
+  if (e.target && e.target.closest && e.target.closest('label.switch')) haptic();
 }, true);
 
 // ===================== คลังไอคอนหมวดหมู่ =====================
@@ -2031,6 +2040,27 @@ function bindEvents() {
   on('hapticsToggle', 'change', function (e) { setPref(HAPTICS_KEY, e.target.checked); if (e.target.checked) haptic(); });
   on('mascotToggle', 'change', function (e) { setPref(MASCOT_KEY, e.target.checked); applyMascot(); });
   if (window.MMT_ICONS && $('fabIcon')) $('fabIcon').innerHTML = window.MMT_ICONS.pencil;
+
+  // หมูโผล่ที่ขอบบนของทุกหน้าต่าง: ย้ายเนื้อหาไปไว้ในกล่องที่เลื่อนได้ แล้ววางหมูไว้เหนือกล่อง
+  // (ถ้าวางในกล่องที่เลื่อนได้ตรง ๆ หมูจะโดนตัดขอบ)
+  document.querySelectorAll('.modal').forEach(function (m) {
+    if (m.querySelector('.modal-scroll')) return;
+    var scroll = document.createElement('div');
+    scroll.className = 'modal-scroll';
+    while (m.firstChild) scroll.appendChild(m.firstChild);
+    var pig = document.createElement('img');
+    pig.className = 'modal-pig mascot mascot-tap';
+    pig.src = 'img/pig-peek.png';
+    pig.alt = '';
+    m.appendChild(pig);
+    m.appendChild(scroll);
+  });
+  // แตะหมู → หมูเด้ง
+  document.addEventListener('click', function (e) {
+    var pig = e.target.closest && e.target.closest('.mascot-tap');
+    if (!pig) return;
+    pig.classList.remove('boing'); void pig.offsetWidth; pig.classList.add('boing');
+  });
 
   on('closeReorderModalBtn', 'click', function () { closeModal('reorderModal'); });
   on('saveReorderBtn', 'click', saveReorder);
