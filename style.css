@@ -525,3 +525,11 @@ html.no-mascot .modal-pig{display:none;}
 .modal-pig{width:92px;top:-48px;}
 .title-pig{width:70px;}
 .pig-deco,.empty-pig,.about-pig,.more-hello img,.analysis-pig,.modal-pig,.title-pig{filter:drop-shadow(0 3px 6px rgba(0,0,0,.18));}
+
+/* ===== v12: หมูในการ์ดยอดเงินไม่บังบรรทัดรายรับ/รายจ่าย ===== */
+.pig-home{width:76px;right:12px;top:8px;}
+.pig-assets{width:80px;right:10px;top:8px;}
+.summary-card.has-pig .summary-row,
+.summary-card.has-pig .grand-total,
+.summary-card.has-pig .asset-type-row{position:relative;z-index:2;}
+html:not(.no-mascot) .summary-card.has-pig .balance-label{padding-right:84px;}
