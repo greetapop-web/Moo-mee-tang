@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-15-pwa-9';
+var APP_VERSION = '2026-10-15-pwa-11';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1292,6 +1292,7 @@ function renderMoreMenu() {
 function openMorePage(name) {
   state.morePage = name;
   $('moreMenu').hidden = !!name;
+  $('moreHello').hidden = !!name;
   document.querySelectorAll('.more-page').forEach(function (p) { p.hidden = p.dataset.page !== name; });
   if (name === 'settings') {
     $('hapticsToggle').checked = prefOn(HAPTICS_KEY);

@@ -492,3 +492,36 @@ html.no-mascot .modal-pig{display:none;}
 #txModal.type-transfer #txAmount,#txModal.type-transfer select{border-color:color-mix(in srgb, var(--transfer) 55%, var(--border));}
 .transfer-arrow{color:var(--transfer);}
 .tx-amount.transfer{color:var(--transfer);}
+
+/* ===== v10: ส่วนหัวแบบโลโก้ ===== */
+.app-header{overflow:hidden;}
+.app-header::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.9;
+  background:
+    radial-gradient(circle at 78% 22%, rgba(255,214,90,.55) 0 5px, transparent 6px),
+    radial-gradient(circle at 88% 48%, rgba(255,255,255,.35) 0 3px, transparent 4px),
+    radial-gradient(circle at 66% 12%, rgba(255,255,255,.3) 0 2.5px, transparent 3.5px),
+    radial-gradient(circle at 94% 16%, rgba(255,214,90,.45) 0 3.5px, transparent 4.5px),
+    radial-gradient(120% 60% at 100% 0%, rgba(255,255,255,.14), transparent 60%);}
+.app-header > *{position:relative;}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;}
+.brand-logo{width:44px;height:44px;border-radius:13px;box-shadow:0 3px 10px rgba(0,0,0,.25);border:2px solid rgba(255,255,255,.85);flex-shrink:0;}
+.brand-word{height:44px;width:auto;filter:drop-shadow(0 3px 5px rgba(0,0,0,.22));}
+.sync-status{margin-top:8px;}
+
+/* ===== v10: หมูหน้าวิเคราะห์ ===== */
+.chart-wrap{position:relative;}
+.analysis-pig{position:absolute;right:-4px;top:-6px;width:92px;z-index:1;animation:pig-bob 3.2s ease-in-out infinite;
+  filter:drop-shadow(0 4px 6px rgba(0,0,0,.15));}
+.empty-pig{width:130px;}
+@media (prefers-reduced-motion:reduce){.analysis-pig{animation:none;}}
+
+/* ===== v11: ขนาดหมูชุดสติกเกอร์ใหม่ (มีขอบขาวในรูปอยู่แล้ว) ===== */
+.pig-home{width:104px;right:10px;top:6px;}
+.pig-assets{width:96px;right:8px;top:6px;}
+.empty-pig{width:160px;margin:30px auto -10px;}
+.analysis-pig{width:84px;}
+.more-hello img{width:76px;}
+.about-pig{width:140px;}
+.modal-pig{width:92px;top:-48px;}
+.title-pig{width:70px;}
+.pig-deco,.empty-pig,.about-pig,.more-hello img,.analysis-pig,.modal-pig,.title-pig{filter:drop-shadow(0 3px 6px rgba(0,0,0,.18));}

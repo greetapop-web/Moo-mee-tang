@@ -21,7 +21,7 @@
   <!-- หน้าเชื่อมต่อครั้งแรก: กรอกลิงก์ + โทเค็น แล้วเก็บไว้ในเครื่องนี้เท่านั้น (ไม่อยู่บน GitHub) -->
   <div id="setupScreen" class="setup-screen" hidden>
     <div class="setup-card">
-      <div class="setup-logo"><img src="img/pig-hug.png" alt="" class="setup-pig"></div>
+      <div class="setup-logo"><img src="img/pig-sit.png" alt="" class="setup-pig"></div>
       <h1>เชื่อมต่อกับ Google Sheet</h1>
       <p>กรอก 2 ค่าที่ได้จาก Apps Script ครั้งเดียว แอปจะจำไว้ในเครื่องนี้</p>
 
@@ -47,7 +47,10 @@
 
     <header class="app-header">
       <div class="header-top">
-        <div class="app-title">🐷 Moo Mee Tang</div>
+        <div class="brand">
+          <img class="brand-logo" src="icons/icon-192.png" alt="">
+          <img class="brand-word" src="img/wordmark.png" alt="หมูมีตัง">
+        </div>
         <button id="syncBtn" class="sync-btn" title="ซิงก์ข้อมูล">⟳</button>
       </div>
       <div id="syncStatus" class="sync-status">กำลังเริ่มระบบ...</div>
@@ -79,7 +82,7 @@
           <button id="clearDayFilterBtn" class="chip-btn">ดูทั้งเดือน</button>
         </div>
         <div id="dayList" class="day-list"></div>
-        <img id="homeEmptyPig" class="empty-pig mascot mascot-tap" src="img/pig-cheer.png" alt="" hidden>
+        <img id="homeEmptyPig" class="empty-pig mascot mascot-tap" src="img/pig-sleep.png" alt="" hidden>
         <div id="homeEmpty" class="empty-state" hidden>ยังไม่มีรายการในเดือนนี้ กดปุ่ม ✏️ เพื่อเริ่มบันทึก</div>
       </section>
 
@@ -113,7 +116,10 @@
           <div><span>สุทธิ</span><b id="allNetTotal">฿0</b></div>
         </div>
 
-        <div id="chartHost" class="chart-host"></div>
+        <div class="chart-wrap">
+          <img class="analysis-pig mascot mascot-tap" src="img/pig-think.png" alt="">
+          <div id="chartHost" class="chart-host"></div>
+        </div>
         <div id="analysisList" class="analysis-list"></div>
         <div id="analysisEmpty" class="empty-state" hidden>ยังไม่มีข้อมูลในเดือนนี้</div>
       </section>
@@ -121,7 +127,7 @@
       <!-- เพิ่มเติม: เมนูไอคอน + หน้าย่อย -->
       <section id="tab-more" class="tab-panel">
         <div id="moreHello" class="more-hello mascot">
-          <img class="mascot-tap" src="img/pig-cheer.png" alt="">
+          <img class="mascot-tap" src="img/pig-wave.png" alt="">
           <div><b>สวัสดีค่ะ</b><span>เก็บทีละนิด... ชีวิตดีขึ้นแน่นอน 💚</span></div>
         </div>
         <div id="moreMenu" class="more-menu"></div>
@@ -166,7 +172,7 @@
         <div class="more-page" data-page="about" hidden>
           <button class="back-btn" data-back="1">‹ เพิ่มเติม</button>
           <h2 class="page-title"><img class="title-pig mascot" src="img/pig-peek.png" alt="">เกี่ยวกับ</h2>
-        <img class="about-pig mascot mascot-tap" src="img/pig-hug.png" alt="">
+        <img class="about-pig mascot mascot-tap" src="img/pig-cheer.png" alt="">
         <p class="about-text">
           แอปนี้เก็บข้อมูลไว้ในเครื่องด้วย จึงเปิดดูและบันทึกรายการได้แม้ไม่มีเน็ต
           รายการที่บันทึกตอนออฟไลน์จะเข้าคิวไว้ แล้วส่งขึ้น Google Sheet ให้อัตโนมัติเมื่อกลับมามีเน็ต
