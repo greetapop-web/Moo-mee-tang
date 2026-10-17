@@ -195,82 +195,91 @@
     </nav>
   </div>
 
-  <!-- Modal: เพิ่มรายการรับ-จ่าย -->
+  <!-- Modal: บันทึกรายการ (เต็มจอ: หมวดหมู่ด้านบน + แผงเครื่องคิดเลขด้านล่าง) -->
   <div id="txModal" class="modal-overlay">
+    <div class="modal tx-sheet" data-no-wrap="1">
+      <div class="tx-top">
+        <button id="closeModalBtn" class="icon-btn tx-top-btn" aria-label="ปิด">✕</button>
+        <div class="segmented tx-types" id="txTypeSegment">
+          <button class="seg-btn active" data-type="expense">รายจ่าย</button>
+          <button class="seg-btn" data-type="income">รายรับ</button>
+          <button class="seg-btn" data-type="transfer">โอน</button>
+        </div>
+        <button id="deleteTxBtn" class="icon-btn tx-top-btn" aria-label="ลบรายการนี้" hidden>🗑</button>
+        <button id="saveTxTopBtn" class="icon-btn tx-top-btn tx-top-save" aria-label="บันทึก">✓</button>
+      </div>
+      <div id="txModalTitle" class="tx-title">เพิ่มรายการ</div>
+
+      <!-- ส่วนกลาง: เลือกหมวด (หรือบัญชีต้นทาง/ปลายทางตอนโอน) -->
+      <div class="tx-middle" id="txMiddle">
+        <div id="txDatePicker" class="date-picker" hidden>
+          <div class="dp-head">
+            <button type="button" id="dpPrev" class="nav-arrow" aria-label="เดือนก่อนหน้า">‹</button>
+            <span id="dpLabel"></span>
+            <button type="button" id="dpNext" class="nav-arrow" aria-label="เดือนถัดไป">›</button>
+          </div>
+          <div id="dpGrid"></div>
+          <div class="dp-quick">
+            <button type="button" id="dpToday" class="chip-btn">วันนี้</button>
+            <button type="button" id="dpYesterday" class="chip-btn">เมื่อวาน</button>
+          </div>
+        </div>
+
+        <div id="txCategoryRow">
+          <div id="txCatGrid" class="tx-cat-grid"></div>
+          <select id="txCategory" class="sr-select" aria-label="หมวดหมู่" tabindex="-1"></select>
+        </div>
+
+        <div id="txToAccountRow" class="transfer-cards" hidden>
+          <button type="button" class="acct-card" id="fromAcctCard"></button>
+          <div class="transfer-arrow">↓</div>
+          <button type="button" class="acct-card" id="toAcctCard"></button>
+          <select id="txToAccount" class="sr-select" aria-label="ไปบัญชี" tabindex="-1"></select>
+        </div>
+        <div id="receiptStatus" class="receipt-status"></div>
+        <img class="tx-pig mascot mascot-tap" src="img/pig-sit.png" alt="">
+      </div>
+
+      <!-- แผงด้านล่าง: บัญชี + บันทึก + จำนวนเงิน + เครื่องคิดเลข -->
+      <div class="tx-panel">
+        <div class="tx-panel-row">
+          <button type="button" id="txAccountBtn" class="acct-chip" aria-label="เลือกบัญชี"></button>
+          <span id="txAccountLabel" class="sr-only">บัญชี/สินทรัพย์</span>
+          <select id="txAccount" class="sr-select" aria-label="บัญชี" tabindex="-1"></select>
+          <div class="amount-box">
+            <input type="text" id="txNote" class="tx-note" placeholder="หมายเหตุ..." autocomplete="off">
+            <input type="text" id="txAmount" inputmode="none" autocomplete="off" placeholder="0">
+            <span id="calcPreview" class="calc-preview"></span>
+          </div>
+        </div>
+        <input type="hidden" id="txDate">
+        <div id="calcPad" class="calc-pad">
+          <button type="button" id="txDateBtn" class="k-date">📅</button>
+          <label class="k-receipt" for="receiptInput" aria-label="ถ่ายรูปใบเสร็จ">📷</label>
+          <input type="file" id="receiptInput" accept="image/*" capture="environment" hidden>
+          <button type="button" id="saveTxBtn" class="k-save tx-save" aria-label="บันทึก">✓</button>
+          <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+          <button type="button" data-k="×" class="k-op">×</button>
+          <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+          <button type="button" data-k="÷" class="k-op">÷</button>
+          <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+          <button type="button" data-k="−" class="k-op">−</button>
+          <button type="button" data-k=".">.</button><button type="button" data-k="0">0</button>
+          <button type="button" data-k="⌫" class="k-fn" aria-label="ลบ">⌫</button>
+          <button type="button" data-k="+" class="k-op">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: เลือกบัญชี (รายการพร้อมไอคอนและยอดเงิน) -->
+  <div id="accountPickerModal" class="modal-overlay top">
     <div class="modal">
       <div class="modal-header">
-        <span id="txModalTitle">เพิ่มรายการ</span>
-        <button id="closeModalBtn" class="icon-btn">✕</button>
+        <span id="accountPickerTitle">เลือกบัญชี</span>
+        <button id="closeAccountPickerBtn" class="icon-btn" aria-label="ปิด">✕</button>
       </div>
-
-      <div class="segmented" id="txTypeSegment">
-        <button class="seg-btn active" data-type="expense">รายจ่าย</button>
-        <button class="seg-btn" data-type="income">รายรับ</button>
-        <button class="seg-btn" data-type="transfer">โอน</button>
-      </div>
-
-      <label>วันที่</label>
-      <input type="hidden" id="txDate">
-      <button type="button" id="txDateBtn" class="date-btn">📅</button>
-      <div id="txDatePicker" class="date-picker" hidden>
-        <div class="dp-head">
-          <button type="button" id="dpPrev" class="nav-arrow" aria-label="เดือนก่อนหน้า">‹</button>
-          <span id="dpLabel"></span>
-          <button type="button" id="dpNext" class="nav-arrow" aria-label="เดือนถัดไป">›</button>
-        </div>
-        <div id="dpGrid"></div>
-        <div class="dp-quick">
-          <button type="button" id="dpToday" class="chip-btn">วันนี้</button>
-          <button type="button" id="dpYesterday" class="chip-btn">เมื่อวาน</button>
-        </div>
-      </div>
-
-      <label id="txAccountLabel">บัญชี/สินทรัพย์</label>
-      <select id="txAccount"></select>
-
-      <div id="txToAccountRow" hidden>
-        <div class="transfer-arrow">↓</div>
-        <label style="margin-top:0;">ไปบัญชี</label>
-        <select id="txToAccount"></select>
-      </div>
-
-      <label>จำนวนเงิน</label>
-      <div class="amount-box">
-        <input type="text" id="txAmount" inputmode="none" autocomplete="off" placeholder="0.00">
-        <span id="calcPreview" class="calc-preview"></span>
-      </div>
-      <!-- เครื่องคิดเลขของแอปเอง (ไม่ต้องใช้แป้นพิมพ์ iPhone) -->
-      <div id="calcPad" class="calc-pad" hidden>
-        <button type="button" data-k="C" class="k-fn">C</button>
-        <button type="button" data-k="÷" class="k-op">÷</button>
-        <button type="button" data-k="×" class="k-op">×</button>
-        <button type="button" data-k="⌫" class="k-fn">⌫</button>
-        <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
-        <button type="button" data-k="−" class="k-op">−</button>
-        <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
-        <button type="button" data-k="+" class="k-op">+</button>
-        <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
-        <button type="button" data-k="=" class="k-op">=</button>
-        <button type="button" data-k="0" class="k-zero">0</button><button type="button" data-k=".">.</button>
-        <button type="button" data-k="ok" class="k-ok">ตกลง</button>
-      </div>
-
-      <div id="txCategoryRow">
-        <label>หมวดหมู่</label>
-        <select id="txCategory"></select>
-      </div>
-
-      <label>บันทึกเพิ่มเติม</label>
-      <input type="text" id="txNote" placeholder="เช่น ข้าวเที่ยง">
-
-      <div class="receipt-row">
-        <label class="receipt-btn" for="receiptInput">📷 ถ่ายรูปใบเสร็จ (ต้องมีเน็ต)</label>
-        <input type="file" id="receiptInput" accept="image/*" capture="environment" hidden>
-      </div>
-      <div id="receiptStatus" class="receipt-status"></div>
-
-      <button id="saveTxBtn" class="primary-btn tx-save">บันทึก</button>
-      <button id="deleteTxBtn" class="danger-btn" hidden>ลบรายการนี้</button>
+      <div id="accountPickerList" class="acct-list"></div>
     </div>
   </div>
 

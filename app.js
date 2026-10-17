@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-15-pwa-13';
+var APP_VERSION = '2026-10-15-pwa-14';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1068,7 +1068,9 @@ var datePicker = { year: 0, monthIndex: 0 };
 
 function setTxDate(str) {
   $('txDate').value = str;
-  $('txDateBtn').textContent = '📅 ' + thaiDateLabel(str);
+  var d = parseDateStr(str);
+  $('txDateBtn').textContent = str === todayStr() ? '📅 วันนี้' : '📅 ' + THAI_DAYS_SHORT[d.getDay()] + ' ' + d.getDate() + ' ' + THAI_MONTHS_SHORT[d.getMonth()];
+  $('txDateBtn').title = thaiDateLabel(str);
   $('txDatePicker').hidden = true;
   $('txDateBtn').classList.remove('open');
 }
@@ -1081,6 +1083,7 @@ function toggleDatePicker() {
   datePicker.monthIndex = d.getMonth();
   renderDatePicker();
   pk.hidden = false;
+  if ($('txMiddle')) $('txMiddle').scrollTop = 0;
   $('txDateBtn').classList.add('open');
 }
 
@@ -1262,7 +1265,7 @@ function renderAnalysis() {
 var MORE_MENU = [
   { label: 'หมวดหมู่', icon: 'categories', page: 'categories' },
   { label: 'บัญชี', icon: 'accounts', tab: 'assets' },
-  { label: 'โอนเงิน', icon: 'transfer', action: function () { openTxModal(null); setTxType('transfer'); applyLastAccounts('transfer'); } },
+  { label: 'โอนเงิน', icon: 'transfer', action: function () { openTxModal(null); setTxType('transfer'); applyLastAccounts('transfer'); renderTxPickers(); } },
   { label: 'จัดการกลุ่ม', icon: 'groups', action: function () { renderGroupsManageUI(); openModal('groupsModal'); } },
   { label: 'การวิเคราะห์', icon: 'analysis', tab: 'analysis' },
   { label: 'ธีมสี', icon: 'theme', page: 'theme' },
@@ -1619,8 +1622,80 @@ function updateCalcPreview() {
   $('calcPreview').textContent = (hasOp && isFinite(r)) ? '= ' + formatBaht(r) : '';
 }
 
-function showCalc() { $('calcPad').hidden = false; $('txAmount').classList.add('calc-on'); }
-function hideCalc() { if ($('calcPad')) { $('calcPad').hidden = true; $('txAmount').classList.remove('calc-on'); } }
+// แผงเครื่องคิดเลขแสดงตลอดในหน้าบันทึกแบบเต็มจอ (เหมือนแอปบันทึกเงินทั่วไป)
+function showCalc() { /* แสดงอยู่แล้ว */ }
+function hideCalc() { /* ไม่ซ่อน */ }
+
+// ===================== หน้าบันทึก: ไทล์หมวดหมู่ + ชิปบัญชี + หน้าต่างเลือกบัญชี =====================
+
+function assetByName(name) {
+  var f = findAssetLocal(name);
+  return f ? f.asset : null;
+}
+
+function acctHtml(name, small) {
+  var a = assetByName(name);
+  if (!name) return '<span class="acct-name">เลือกบัญชี</span>';
+  return '<span class="acct-icon">' + escapeHtml(a ? assetIcon(a) : '💰') + '</span>' +
+    '<span class="acct-text"><span class="acct-name">' + escapeHtml(name) + '</span>' +
+    (a ? '<span class="acct-bal">' + escapeHtml(formatBaht(a.balance)) + '</span>' : '') + '</span>';
+}
+
+function renderTxCatGrid() {
+  var sel = $('txCategory'), grid = $('txCatGrid');
+  if (!sel || !grid) return;
+  var type = getCurrentTxType();
+  grid.innerHTML = [].map.call(sel.options, function (o) {
+    if (!o.value) return '<div class="tx-cat-empty">' + escapeHtml(o.textContent) + '</div>';
+    return '<button type="button" class="tx-cat' + (o.value === sel.value ? ' selected' : '') + '" data-v="' + escapeHtml(o.value) + '">' +
+      '<span class="cat-icon">' + escapeHtml(categoryIcon(type, o.value)) + '</span>' +
+      '<span class="cat-name">' + escapeHtml(o.value) + '</span></button>';
+  }).join('');
+  grid.querySelectorAll('.tx-cat').forEach(function (b) {
+    b.addEventListener('click', function () {
+      sel.value = b.dataset.v;
+      renderTxCatGrid();
+    });
+  });
+}
+
+function renderTxAccounts() {
+  if (!$('txAccountBtn')) return;
+  var from = $('txAccount').value, to = $('txToAccount').value;
+  $('txAccountBtn').innerHTML = acctHtml(from);
+  $('fromAcctCard').innerHTML = '<span class="acct-cap">จากบัญชี</span>' + acctHtml(from);
+  $('toAcctCard').innerHTML = '<span class="acct-cap">ไปบัญชี</span>' + acctHtml(to);
+}
+
+function renderTxPickers() { renderTxCatGrid(); renderTxAccounts(); }
+
+var acctPickTarget = 'txAccount';
+function openAccountPicker(selectId) {
+  acctPickTarget = selectId;
+  var cur = $(selectId).value;
+  var type = getCurrentTxType();
+  $('accountPickerTitle').textContent = selectId === 'txToAccount' ? 'โอนไปบัญชี' : (type === 'transfer' ? 'โอนจากบัญชี' : 'เลือกบัญชี');
+  var html = '';
+  (state.assetsOverview.groups || []).forEach(function (g) {
+    if (!(g.assets || []).length) return;
+    html += '<div class="acct-group">' + escapeHtml(g.name) + '</div>';
+    g.assets.forEach(function (a) {
+      html += '<button type="button" class="acct-row' + (a.name === cur ? ' selected' : '') + '" data-v="' + escapeHtml(a.name) + '">' +
+        '<span class="acct-icon">' + escapeHtml(assetIcon(a)) + '</span><span class="acct-name">' + escapeHtml(a.name) + '</span>' +
+        '<span class="acct-bal">' + escapeHtml(formatBaht(a.balance)) + '</span><span class="acct-check">' + (a.name === cur ? '✓' : '') + '</span></button>';
+    });
+  });
+  $('accountPickerList').innerHTML = html || '<div class="empty-state">ยังไม่มีสินทรัพย์ เพิ่มได้ที่แท็บสินทรัพย์</div>';
+  $('accountPickerList').querySelectorAll('.acct-row').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var sel = $(acctPickTarget);
+      selectIfExists(sel, b.dataset.v);
+      renderTxAccounts();
+      closeModal('accountPickerModal');
+    });
+  });
+  openModal('accountPickerModal');
+}
 
 // ===================== จำบัญชีที่ใช้ล่าสุด (เฉพาะเครื่องนี้) =====================
 
@@ -1663,6 +1738,7 @@ function setTxType(type) {
   $('txToAccountRow').hidden = !isTransfer;
   $('txAccountLabel').textContent = isTransfer ? 'จากบัญชี' : 'บัญชี/สินทรัพย์';
   if (!isTransfer) populateCategorySelect();
+  renderTxPickers();
 }
 
 function selectOrAdd(sel, value, label) {
@@ -1687,7 +1763,7 @@ function openTxModal(edit) {
 
   $('receiptStatus').textContent = '';
   $('txModalTitle').textContent = txEdit ? 'แก้ไขรายการ' : 'เพิ่มรายการ';
-  $('saveTxBtn').textContent = txEdit ? 'บันทึกการแก้ไข' : 'บันทึก';
+  $('saveTxBtn').textContent = 'บันทึก';
   $('deleteTxBtn').hidden = !txEdit;
 
   if (txEdit) {
@@ -1711,7 +1787,9 @@ function openTxModal(edit) {
     $('txNote').value = '';
   }
   updateCalcPreview();
-  if (txEdit) hideCalc(); else showCalc();
+  $('txDatePicker').hidden = true;
+  renderTxPickers();
+  $('txMiddle').scrollTop = 0;
   openModal('txModal');
 }
 
@@ -2152,6 +2230,7 @@ function bindEvents() {
     if (!btn) return;
     setTxType(btn.dataset.type);
     if (!txEdit) applyLastAccounts(btn.dataset.type);
+    renderTxPickers();
   });
 
   on('analysisSegment', 'click', function (e) {
@@ -2204,7 +2283,7 @@ function bindEvents() {
   // หมูโผล่ที่ขอบบนของทุกหน้าต่าง: ย้ายเนื้อหาไปไว้ในกล่องที่เลื่อนได้ แล้ววางหมูไว้เหนือกล่อง
   // (ถ้าวางในกล่องที่เลื่อนได้ตรง ๆ หมูจะโดนตัดขอบ)
   document.querySelectorAll('.modal').forEach(function (m) {
-    if (m.querySelector('.modal-scroll')) return;
+    if (m.querySelector('.modal-scroll') || m.dataset.noWrap) return;
     var scroll = document.createElement('div');
     scroll.className = 'modal-scroll';
     while (m.firstChild) scroll.appendChild(m.firstChild);
@@ -2227,13 +2306,13 @@ function bindEvents() {
     var b = e.target.closest('button[data-k]');
     if (b) calcPress(b.dataset.k);
   });
-  on('txAmount', 'focus', showCalc);
-  on('txAmount', 'click', showCalc);
   on('txAmount', 'input', updateCalcPreview);
-  ['txAccount', 'txToAccount', 'txCategory', 'txNote', 'txDateBtn'].forEach(function (id) {
-    on(id, 'focus', hideCalc);
-  });
-  on('txDateBtn', 'click', hideCalc);
+  on('txAccountBtn', 'click', function () { openAccountPicker('txAccount'); });
+  on('fromAcctCard', 'click', function () { openAccountPicker('txAccount'); });
+  on('toAcctCard', 'click', function () { openAccountPicker('txToAccount'); });
+  on('closeAccountPickerBtn', 'click', function () { closeModal('accountPickerModal'); });
+  on('saveTxTopBtn', 'click', saveTransaction);
+  ['txAccount', 'txToAccount', 'txCategory'].forEach(function (id) { on(id, 'change', renderTxPickers); });
   on('editAssetName', 'input', function () {
     $('assetRenameNote').hidden = $('editAssetName').value.trim() === state.editingAssetName;
   });
