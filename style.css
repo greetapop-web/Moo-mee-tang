@@ -533,3 +533,39 @@ html.no-mascot .modal-pig{display:none;}
 .summary-card.has-pig .grand-total,
 .summary-card.has-pig .asset-type-row{position:relative;z-index:2;}
 html:not(.no-mascot) .summary-card.has-pig .balance-label{padding-right:84px;}
+
+/* ===== v13: หน้าต่างเลื่อนขึ้นจากด้านล่าง ===== */
+@keyframes sheet-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes sheet-down{from{transform:translateY(0)}to{transform:translateY(100%)}}
+@keyframes fade-in{from{background:rgba(0,0,0,0)}to{background:rgba(0,0,0,.6)}}
+@keyframes fade-out{from{background:rgba(0,0,0,.6)}to{background:rgba(0,0,0,0)}}
+.modal-overlay.open{animation:fade-in .22s ease-out;}
+.modal-overlay.open .modal{animation:sheet-up .3s cubic-bezier(.2,.9,.25,1);}
+.modal-overlay.closing{animation:fade-out .2s ease-in forwards;}
+.modal-overlay.closing .modal{animation:sheet-down .2s ease-in forwards;}
+@media (prefers-reduced-motion:reduce){.modal-overlay.open,.modal-overlay.open .modal,.modal-overlay.closing,.modal-overlay.closing .modal{animation:none;}}
+
+/* ===== v13: ช่องจำนวนเงิน + เครื่องคิดเลข ===== */
+.amount-box{position:relative;}
+.modal #txAmount{font-size:26px;font-weight:800;padding:12px 14px;caret-color:transparent;}
+.modal #txAmount.calc-on{border-width:2px;}
+#txModal.type-expense #txAmount{color:var(--red);}
+#txModal.type-income #txAmount{color:var(--green);}
+#txModal.type-transfer #txAmount{color:var(--transfer);}
+.calc-preview{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:700;
+  color:var(--text-secondary);pointer-events:none;}
+.calc-pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;padding:10px;
+  background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-md);}
+.calc-pad[hidden]{display:none;}
+.calc-pad button{height:50px;border:none;border-radius:12px;background:var(--bg-card);color:var(--text-primary);
+  font-size:21px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:0 1px 0 var(--border);}
+.calc-pad button:active{transform:scale(.95);filter:brightness(.95);}
+.calc-pad .k-op{color:var(--accent);font-size:24px;}
+.calc-pad .k-fn{color:var(--text-secondary);}
+.calc-pad .k-zero{grid-column:span 2;}
+.calc-pad .k-ok{font-size:16px;font-weight:800;color:#fff;background:var(--accent);}
+#txModal.type-expense .calc-pad .k-ok{background:var(--red);}
+#txModal.type-income .calc-pad .k-ok{background:var(--green);}
+#txModal.type-transfer .calc-pad .k-ok{background:var(--transfer);}
+/* หน้าบันทึกสูงคงที่: เปิด/ปิดเครื่องคิดเลขแล้วช่องด้านบนไม่เลื่อนหนีนิ้ว */
+#txModal .modal-scroll{height:86vh;height:86dvh;}

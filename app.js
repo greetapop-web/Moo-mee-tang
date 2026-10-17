@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-15-pwa-12';
+var APP_VERSION = '2026-10-15-pwa-13';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1262,7 +1262,7 @@ function renderAnalysis() {
 var MORE_MENU = [
   { label: 'หมวดหมู่', icon: 'categories', page: 'categories' },
   { label: 'บัญชี', icon: 'accounts', tab: 'assets' },
-  { label: 'โอนเงิน', icon: 'transfer', action: function () { openTxModal(null); setTxType('transfer'); } },
+  { label: 'โอนเงิน', icon: 'transfer', action: function () { openTxModal(null); setTxType('transfer'); applyLastAccounts('transfer'); } },
   { label: 'จัดการกลุ่ม', icon: 'groups', action: function () { renderGroupsManageUI(); openModal('groupsModal'); } },
   { label: 'การวิเคราะห์', icon: 'analysis', tab: 'analysis' },
   { label: 'ธีมสี', icon: 'theme', page: 'theme' },
@@ -1516,9 +1516,10 @@ function populateAccountSelect() {
   var assets = allAssetsFlat();
   var html = assets.length
     ? assets.map(function (a) {
-        return '<option value="' + escapeHtml(a.name) + '">' + escapeHtml(assetIcon(a) + ' ' + a.name) + '</option>';
+        return '<option value="' + escapeHtml(a.name) + '">' +
+          escapeHtml(assetIcon(a) + ' ' + a.name + '  ·  ' + formatBaht(a.balance)) + '</option>';
       }).join('')
-    : '<option value="">— เพิ่มสินทรัพย์ในแท็บกระเป๋าเงินก่อน —</option>';
+    : '<option value="">— เพิ่มสินทรัพย์ในแท็บสินทรัพย์ก่อน —</option>';
   ['txAccount', 'txToAccount'].forEach(function (id) {
     var sel = $(id);
     if (!sel) return;
@@ -1534,8 +1535,117 @@ function getCurrentTxType() {
   return active ? active.dataset.type : 'expense';
 }
 
-function openModal(id) { $(id).classList.add('open'); }
-function closeModal(id) { $(id).classList.remove('open'); }
+/** เปิด/ปิดหน้าต่างแบบเลื่อนขึ้นจากด้านล่าง (ปิด = เลื่อนลงก่อนแล้วค่อยหาย) */
+function openModal(id) {
+  var el = $(id);
+  clearTimeout(el._closeTimer);
+  el.classList.remove('closing');
+  el.classList.add('open');
+}
+function closeModal(id) {
+  var el = $(id);
+  if (!el.classList.contains('open')) return;
+  el.classList.add('closing');
+  clearTimeout(el._closeTimer);
+  el._closeTimer = setTimeout(function () { el.classList.remove('open', 'closing'); }, 200);
+  if (id === 'txModal') hideCalc();
+}
+
+// ===================== เครื่องคิดเลขในช่องจำนวนเงิน =====================
+
+var CALC_OPS = '+−×÷';
+
+/** คำนวณนิพจน์ เช่น "120+35×2" → 190 (คูณ/หารก่อน บวก/ลบทีหลัง) คืน NaN ถ้าไม่ถูกต้อง */
+function calcEval(str) {
+  str = String(str || '').replace(/,/g, '').replace(/\s/g, '').replace(/\*/g, '×').replace(/\//g, '÷').replace(/-/g, '−');
+  if (!str) return NaN;
+  if (CALC_OPS.indexOf(str.slice(-1)) >= 0) str = str.slice(0, -1);   // ลงท้ายด้วยเครื่องหมาย → ตัดทิ้ง
+  var nums = [], ops = [], cur = '';
+  for (var i = 0; i < str.length; i++) {
+    var c = str[i];
+    if (CALC_OPS.indexOf(c) >= 0) {
+      if (cur === '') return NaN;
+      nums.push(parseFloat(cur)); ops.push(c); cur = '';
+    } else if (/[0-9.]/.test(c)) cur += c;
+    else return NaN;
+  }
+  if (cur === '' || cur === '.') return NaN;
+  nums.push(parseFloat(cur));
+  if (nums.some(isNaN)) return NaN;
+  // คูณ/หารก่อน
+  var n2 = [nums[0]], o2 = [];
+  for (var j = 0; j < ops.length; j++) {
+    if (ops[j] === '×') n2[n2.length - 1] *= nums[j + 1];
+    else if (ops[j] === '÷') { if (nums[j + 1] === 0) return NaN; n2[n2.length - 1] /= nums[j + 1]; }
+    else { o2.push(ops[j]); n2.push(nums[j + 1]); }
+  }
+  var r = n2[0];
+  for (var k = 0; k < o2.length; k++) r = (o2[k] === '+') ? r + n2[k + 1] : r - n2[k + 1];
+  return Math.round(r * 100) / 100;
+}
+
+function calcPress(key) {
+  var input = $('txAmount');
+  var v = input.value;
+  var last = v.slice(-1);
+  var curNum = v.split(/[+−×÷]/).pop();
+  if (/^[0-9]$/.test(key)) {
+    if (/\.\d\d$/.test(curNum)) return;              // ทศนิยมได้แค่ 2 ตำแหน่ง
+    if (curNum === '0') v = v.slice(0, -1);              // ไม่ให้มี 0 นำหน้า เช่น 05
+    v += key;
+  } else if (key === '.') {
+    if (curNum.indexOf('.') >= 0) return;
+    v += (curNum === '' ? '0.' : '.');
+  } else if (CALC_OPS.indexOf(key) >= 0) {
+    if (!v) return;
+    v = (CALC_OPS.indexOf(last) >= 0 || last === '.') ? v.slice(0, -1) + key : v + key;
+  } else if (key === '⌫') {
+    v = v.slice(0, -1);
+  } else if (key === 'C') {
+    v = '';
+  } else if (key === '=' || key === 'ok') {
+    var r = calcEval(v);
+    if (isFinite(r)) v = String(r);
+    if (key === 'ok') { input.value = v; updateCalcPreview(); hideCalc(); return; }
+  }
+  input.value = v;
+  updateCalcPreview();
+}
+
+function updateCalcPreview() {
+  var v = $('txAmount').value;
+  var hasOp = /[+−×÷]/.test(v.slice(0, -1)) || (/[+−×÷]/.test(v) && !/[+−×÷]$/.test(v));
+  var r = calcEval(v);
+  $('calcPreview').textContent = (hasOp && isFinite(r)) ? '= ' + formatBaht(r) : '';
+}
+
+function showCalc() { $('calcPad').hidden = false; $('txAmount').classList.add('calc-on'); }
+function hideCalc() { if ($('calcPad')) { $('calcPad').hidden = true; $('txAmount').classList.remove('calc-on'); } }
+
+// ===================== จำบัญชีที่ใช้ล่าสุด (เฉพาะเครื่องนี้) =====================
+
+var LAST_TX_KEY = 'moo-mee-tang-last-tx';
+function loadLastTx() { try { return JSON.parse(localStorage.getItem(LAST_TX_KEY)) || {}; } catch (e) { return {}; } }
+function saveLastTx(tx) {
+  var last = loadLastTx();
+  if (tx.type === 'transfer') { last.transferFrom = tx.account; last.transferTo = tx.toAccount; }
+  else last.account = tx.account;
+  try { localStorage.setItem(LAST_TX_KEY, JSON.stringify(last)); } catch (e) { /* ไม่เป็นไร */ }
+}
+/** เลือกบัญชีที่จำไว้ (ถ้ายังมีอยู่) */
+function selectIfExists(sel, value) {
+  if (!value) return;
+  if ([].some.call(sel.options, function (o) { return o.value === value; })) sel.value = value;
+}
+function applyLastAccounts(type) {
+  var last = loadLastTx();
+  if (type === 'transfer') {
+    selectIfExists($('txAccount'), last.transferFrom || last.account);
+    selectIfExists($('txToAccount'), last.transferTo);
+  } else {
+    selectIfExists($('txAccount'), last.account);
+  }
+}
 
 var txEdit = null;   // null = เพิ่มรายการใหม่, ไม่ใช่ null = กำลังแก้ไขรายการเดิม
 
@@ -1592,18 +1702,23 @@ function openTxModal(edit) {
     selectOrAdd($('txAccount'), it.account);
     if (it.type === 'transfer') selectOrAdd($('txToAccount'), it.toAccount);
   } else {
-    setTxType(state.lastTxType || 'expense');
+    // กดดินสอ = เริ่มที่ "รายจ่าย" เสมอ แต่บัญชีจำจากครั้งล่าสุด
+    setTxType('expense');
     populateAccountSelect();
+    applyLastAccounts('expense');
     setTxDate(defaultNewTxDate());
     $('txAmount').value = '';
     $('txNote').value = '';
   }
+  updateCalcPreview();
+  if (txEdit) hideCalc(); else showCalc();
   openModal('txModal');
 }
 
 function saveTransaction() {
-  var amount = parseFloat($('txAmount').value);
-  if (!amount || amount <= 0) { showToast('กรุณาระบุจำนวนเงิน'); return; }
+  var amount = calcEval($('txAmount').value);
+  if (!isFinite(amount) || amount <= 0) { showToast('กรุณาระบุจำนวนเงิน'); showCalc(); return; }
+  $('txAmount').value = String(amount);
   var type = getCurrentTxType();
   var category = type === 'transfer' ? 'โอนเงิน' : $('txCategory').value;
   if (!category) { showToast('กรุณาเลือกหมวดหมู่'); return; }
@@ -1627,6 +1742,7 @@ function saveTransaction() {
 
   if (txEdit) {
     var ed = txEdit;
+    saveLastTx(tx);
     state.year = d.getFullYear();
     state.monthIndex = d.getMonth();
     performWrite('updateTransaction', [ed.sheetName, ed.item.rowIndex, expectedOf(ed.item), tx], function () {
@@ -1642,7 +1758,7 @@ function saveTransaction() {
 
   state.year = d.getFullYear();
   state.monthIndex = d.getMonth();
-  state.lastTxType = tx.type;
+  saveLastTx(tx);
   if (homeView() === 'calendar') state.selectedDay = tx.dateStr;
 
   performWrite('addTransaction', [tx], function () { addTransactionLocal(tx); },
@@ -1746,6 +1862,8 @@ function openEditBalanceModal(asset, group) {
   state.editingAssetName = asset.name;
   $('editBalanceTitle').textContent = 'จัดการ: ' + asset.name;
   $('editBalanceValue').value = asset.balance;
+  $('editAssetName').value = asset.name;
+  $('assetRenameNote').hidden = true;
   $('editAssetIconBtn').textContent = assetIcon(asset);
   renderAssetIncludeControl();
   populateGroupSelects(group ? group.name : asset.group);
@@ -1816,17 +1934,56 @@ function changeAssetIcon() {
   });
 }
 
+function renameAssetLocal(oldName, newName) {
+  var found = findAssetLocal(oldName);
+  if (found) found.asset.name = newName;
+  Object.keys(state.months).forEach(function (k) {
+    (state.months[k].days || []).forEach(function (d) {
+      (d.items || []).forEach(function (it) {
+        if (it.account === oldName) it.account = newName;
+        if (it.toAccount === oldName) it.toAccount = newName;
+      });
+    });
+  });
+  var last = loadLastTx(), changed = false;
+  ['account', 'transferFrom', 'transferTo'].forEach(function (k) { if (last[k] === oldName) { last[k] = newName; changed = true; } });
+  if (changed) { try { localStorage.setItem(LAST_TX_KEY, JSON.stringify(last)); } catch (e) { /* ไม่เป็นไร */ } }
+}
+
 function saveEditBalance() {
   var val = parseFloat($('editBalanceValue').value);
   if (isNaN(val)) { showToast('กรุณาระบุตัวเลข'); return; }
-  var name = state.editingAssetName;
+  var oldName = state.editingAssetName;
+  var newName = $('editAssetName').value.trim();
+  if (!newName) { showToast('กรุณาใส่ชื่อสินทรัพย์'); return; }
+  if (newName !== oldName && findAssetLocal(newName)) { showToast('มีสินทรัพย์ชื่อนี้อยู่แล้ว'); return; }
+  var found = findAssetLocal(oldName);
+  var balanceChanged = !found || Math.abs((Number(found.asset.balance) || 0) - val) > 0.001;
 
-  performWrite('setAssetBalance', [name, val], function () {
-    var found = findAssetLocal(name);
-    if (found) { found.asset.balance = val; recomputeAssetTotals(); }
-  }, 'ปรับยอด ' + name).then(function () {
+  var chain = Promise.resolve();
+  if (newName !== oldName) {
+    chain = performWrite('renameAsset', [oldName, newName], function () {
+      renameAssetLocal(oldName, newName);
+    }, 'เปลี่ยนชื่อ ' + oldName);
+    state.editingAssetName = newName;
+  }
+  var name = newName;
+  if (!balanceChanged) {
+    chain.then(function () {
+      closeModal('editBalanceModal');
+      showToast(newName !== oldName ? 'เปลี่ยนชื่อแล้ว — รายการเก่าเปลี่ยนตามให้ด้วย' : 'ไม่มีอะไรเปลี่ยน');
+    });
+    return;
+  }
+
+  chain.then(function () {
+    return performWrite('setAssetBalance', [name, val], function () {
+      var f = findAssetLocal(name);
+      if (f) { f.asset.balance = val; recomputeAssetTotals(); }
+    }, 'ปรับยอด ' + name);
+  }).then(function () {
     closeModal('editBalanceModal');
-    showToast('ปรับยอดแล้ว');
+    showToast(newName !== oldName ? 'บันทึกชื่อและยอดแล้ว' : 'ปรับยอดแล้ว');
   });
 }
 
@@ -1992,7 +2149,9 @@ function bindEvents() {
 
   on('txTypeSegment', 'click', function (e) {
     var btn = e.target.closest('.seg-btn');
-    if (btn) setTxType(btn.dataset.type);
+    if (!btn) return;
+    setTxType(btn.dataset.type);
+    if (!txEdit) applyLastAccounts(btn.dataset.type);
   });
 
   on('analysisSegment', 'click', function (e) {
@@ -2063,6 +2222,22 @@ function bindEvents() {
     pig.classList.remove('boing'); void pig.offsetWidth; pig.classList.add('boing');
   });
 
+  // เครื่องคิดเลข
+  on('calcPad', 'click', function (e) {
+    var b = e.target.closest('button[data-k]');
+    if (b) calcPress(b.dataset.k);
+  });
+  on('txAmount', 'focus', showCalc);
+  on('txAmount', 'click', showCalc);
+  on('txAmount', 'input', updateCalcPreview);
+  ['txAccount', 'txToAccount', 'txCategory', 'txNote', 'txDateBtn'].forEach(function (id) {
+    on(id, 'focus', hideCalc);
+  });
+  on('txDateBtn', 'click', hideCalc);
+  on('editAssetName', 'input', function () {
+    $('assetRenameNote').hidden = $('editAssetName').value.trim() === state.editingAssetName;
+  });
+
   on('closeReorderModalBtn', 'click', function () { closeModal('reorderModal'); });
   on('saveReorderBtn', 'click', saveReorder);
 
@@ -2119,7 +2294,7 @@ function bindEvents() {
   });
 
   document.querySelectorAll('.modal-overlay').forEach(function (ov) {
-    ov.addEventListener('click', function (e) { if (e.target === ov) ov.classList.remove('open'); });
+    ov.addEventListener('click', function (e) { if (e.target === ov) closeModal(ov.id); });
   });
 
   // กลับมามีเน็ตเมื่อไร ส่งคิวที่ค้างให้ทันที

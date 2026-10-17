@@ -186,7 +186,7 @@
 
     <nav class="bottom-nav">
       <button class="nav-btn active" data-tab="home"><span class="nav-icon">🏠</span><span>หน้าหลัก</span></button>
-      <button class="nav-btn" data-tab="assets"><span class="nav-icon">👛</span><span>กระเป๋าเงิน</span></button>
+      <button class="nav-btn" data-tab="assets"><span class="nav-icon">👛</span><span>สินทรัพย์</span></button>
       <div class="nav-add-slot">
         <button id="fabAdd" class="nav-add" aria-label="จดบันทึกรายการ"><span id="fabIcon" class="fab-icon"></span></button>
       </div>
@@ -235,7 +235,25 @@
       </div>
 
       <label>จำนวนเงิน</label>
-      <input type="number" id="txAmount" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+      <div class="amount-box">
+        <input type="text" id="txAmount" inputmode="none" autocomplete="off" placeholder="0.00">
+        <span id="calcPreview" class="calc-preview"></span>
+      </div>
+      <!-- เครื่องคิดเลขของแอปเอง (ไม่ต้องใช้แป้นพิมพ์ iPhone) -->
+      <div id="calcPad" class="calc-pad" hidden>
+        <button type="button" data-k="C" class="k-fn">C</button>
+        <button type="button" data-k="÷" class="k-op">÷</button>
+        <button type="button" data-k="×" class="k-op">×</button>
+        <button type="button" data-k="⌫" class="k-fn">⌫</button>
+        <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+        <button type="button" data-k="−" class="k-op">−</button>
+        <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+        <button type="button" data-k="+" class="k-op">+</button>
+        <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+        <button type="button" data-k="=" class="k-op">=</button>
+        <button type="button" data-k="0" class="k-zero">0</button><button type="button" data-k=".">.</button>
+        <button type="button" data-k="ok" class="k-ok">ตกลง</button>
+      </div>
 
       <div id="txCategoryRow">
         <label>หมวดหมู่</label>
@@ -300,9 +318,13 @@
         </div>
       </div>
 
-      <label>ยอดคงเหลือใหม่</label>
+      <label for="editAssetName">ชื่อสินทรัพย์</label>
+      <input type="text" id="editAssetName" placeholder="เช่น เงินใช้จ่าย">
+      <p id="assetRenameNote" class="cat-note" hidden>เปลี่ยนชื่อแล้ว รายการเก่าทุกเดือนที่ใช้ชื่อเดิมจะเปลี่ยนชื่อตามให้อัตโนมัติ</p>
+
+      <label>ยอดคงเหลือ</label>
       <input type="number" id="editBalanceValue" inputmode="decimal" step="0.01">
-      <button id="saveEditBalanceBtn" class="primary-btn">บันทึกยอด</button>
+      <button id="saveEditBalanceBtn" class="primary-btn">บันทึก</button>
 
       <label>ย้ายไปกลุ่ม</label>
       <select id="editAssetGroupSelect"></select>
@@ -319,7 +341,7 @@
         <span>จัดการกลุ่มสินทรัพย์</span>
         <button id="closeGroupsModalBtn" class="icon-btn">✕</button>
       </div>
-      <p class="about-text">สวิตช์ = นับทั้งกลุ่มใน "เงินที่ใช้ได้" หรือไม่ (กดแล้วรายการย่อยในกลุ่มทำตามทั้งหมด) ถ้าอยากเลือกทีละรายการ แตะที่สินทรัพย์นั้นในหน้ากระเป๋าเงิน ใช้ปุ่ม ▲▼ เพื่อเรียงลำดับกลุ่ม</p>
+      <p class="about-text">สวิตช์ = นับทั้งกลุ่มใน "เงินที่ใช้ได้" หรือไม่ (กดแล้วรายการย่อยในกลุ่มทำตามทั้งหมด) ถ้าอยากเลือกทีละรายการ แตะที่สินทรัพย์นั้นในหน้าสินทรัพย์ ใช้ปุ่ม ▲▼ เพื่อเรียงลำดับกลุ่ม</p>
       <div id="groupsManageList" class="groups-manage-list"></div>
       <div class="add-row" style="margin-top:14px;">
         <input type="text" id="newGroupName" placeholder="ชื่อกลุ่มใหม่">
