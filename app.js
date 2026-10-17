@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-15-pwa-14';
+var APP_VERSION = '2026-10-15-pwa-15';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -139,25 +139,29 @@ document.addEventListener('change', function (e) {
 // ไม่ใช้รูปแทรกในเซลล์ เพราะแบบนั้นแอปอ่านไม่ได้
 
 var ICON_LIBRARY = [
-  { name: 'อาหารและเครื่องดื่ม', icons: ['🍚','🍜','🍛','🍲','🍱','🍣','🥟','🍳','🍔','🍕','🥗','🍗','🥩','🍞','🍰','🍩','🍦','🍉','🍎','🧋','☕','🥤','🍺','🍻'] },
-  { name: 'เดินทาง', icons: ['🚗','🚕','🛵','🏍️','🚌','🚆','🚇','✈️','🚲','⛽','🅿️','🔧','🛞','🛳️'] },
-  { name: 'บ้านและบิล', icons: ['🏠','🏢','💡','💧','🔥','📶','📱','💻','📺','🧺','🧹','🛋️','🔑','🧾','🧻','🪴'] },
-  { name: 'ช้อปปิ้ง', icons: ['🛍️','🛒','👕','👗','👟','👜','💄','💍','⌚','🎁','📦','🧸'] },
-  { name: 'สุขภาพ', icons: ['💊','🏥','🩺','🦷','👓','💪','🏃','🧘','🩹','💉'] },
-  { name: 'ครอบครัวและสังคม', icons: ['👶','🍼','🧒','👨‍👩‍👧','🐶','🐱','💝','🙏','🎂','💒','🤝','🧧'] },
-  { name: 'บันเทิงและการศึกษา', icons: ['🎬','🎮','🎵','🎤','📚','🎓','✏️','🎨','⚽','🏸','🏖️','🏕️','🎟️','📸'] },
-  { name: 'รายรับและการเงิน', icons: ['💵','💰','💳','🏦','💸','🪙','📈','📉','💹','💼','🧑‍⚕️','🔬','⏰','🏆','🏅','➕'] },
-  { name: 'อื่นๆ', icons: ['⭐','❤️','🔶','🔷','📌','🗂️','❓','✨'] }
+  { name: 'อาหาร', icons: ['🍚','🍜','🍛','🍲','🍱','🍣','🍙','🍘','🥟','🍤','🍳','🥘','🍝','🍔','🍟','🌭','🍕','🥪','🌮','🌯','🥙','🥗','🍗','🍖','🥩','🥓','🍢','🍡','🦐','🦀','🦑','🐟','🥚','🧀','🍞','🥐','🥖','🥯','🥞','🧇','🍿','🥫','🧂'] },
+  { name: 'ขนมและผลไม้', icons: ['🍰','🎂','🧁','🍩','🍪','🍫','🍬','🍭','🍮','🍦','🍧','🍨','🍉','🍎','🍌','🍊','🍇','🍓','🍍','🥭','🥥','🥝','🍒','🍑','🍐','🍋','🫐','🥑','🌽','🥕','🥦','🍄','🥜'] },
+  { name: 'เครื่องดื่ม', icons: ['☕','🍵','🧋','🥤','🧃','🥛','🍼','🍺','🍻','🍷','🥂','🍸','🍹','🥃','🍶','🧊','💧'] },
+  { name: 'เดินทาง', icons: ['🚗','🚕','🚙','🛻','🚐','🛵','🏍️','🚲','🛴','🚌','🚎','🚆','🚇','🚝','🚄','✈️','🛫','🚢','⛴️','🛳️','🚁','⛽','🅿️','🚦','🛣️','🔧','🛞','🚘','🧳','🗺️','🎫'] },
+  { name: 'บ้านและบิล', icons: ['🏠','🏡','🏢','🏘️','🔑','🛏️','🛋️','🪑','🚿','🛁','🚽','🧺','🧹','🧽','🧴','🧻','🪣','💡','🔌','🔋','💧','🔥','❄️','📶','📱','☎️','💻','🖥️','🖨️','📺','📡','🧾','📮','🪴','🔨','🪛','🧰','🗑️'] },
+  { name: 'ช้อปปิ้งและแฟชั่น', icons: ['🛍️','🛒','🏬','🏪','👕','👚','👗','👖','🩳','🧥','👔','👙','🩱','👟','👠','👡','🥾','👜','👛','🎒','👒','🧢','🕶️','👓','💄','💅','💍','📿','⌚','🎁','📦','🧸','🪞'] },
+  { name: 'สุขภาพและความงาม', icons: ['💊','💉','🩺','🩹','🩸','🏥','🦷','👁️','🧠','🫀','🧪','🔬','🧬','🌡️','😷','💆','💇','🧖','🧴','🪒','💪','🏃','🧘','🏋️','🚴','🏊','🥗'] },
+  { name: 'ครอบครัวและสังคม', icons: ['👶','🍼','🧒','👧','👦','👨‍👩‍👧','👨‍👩‍👧‍👦','👵','👴','💑','💒','💝','💌','🎂','🎉','🎊','🤝','🙏','🧧','🎁','💐','🌹','🐶','🐱','🐰','🐹','🐟','🐦','🦴','🐾'] },
+  { name: 'ทำบุญและเทศกาล', icons: ['🙏','🛕','📿','🪔','🕯️','🌸','🌼','🪷','🎆','🎇','🧨','🎄','🎃','🏮','🎎','🎐','💮'] },
+  { name: 'บันเทิงและงานอดิเรก', icons: ['🎬','🍿','🎮','🕹️','🎲','🧩','🎯','🎳','🎤','🎧','🎵','🎸','🎹','🥁','🎨','🖌️','📷','📸','🎥','📚','📖','✏️','🎭','🎪','🎟️','🎫','🏖️','🏕️','⛺','🏔️','🎢','🎡','🧶','🪡','🌱'] },
+  { name: 'กีฬา', icons: ['⚽','🏀','🏈','⚾','🎾','🏐','🏸','🏓','🥊','⛳','🎣','🏄','🏂','⛷️','🛹','🚣','🤿','🏆','🏅','🥇'] },
+  { name: 'การศึกษาและงาน', icons: ['🎓','🏫','📚','📝','✏️','🖊️','📐','📏','🗂️','📁','📎','📌','💼','🧑‍💻','🧑‍⚕️','🧑‍🔬','🧑‍🏫','👨‍🍳','🔬','🧪','⏰','📅','🗓️','📊','📈','🖥️'] },
+  { name: 'รายรับและการเงิน', icons: ['💵','💴','💶','💷','💰','🪙','💳','💸','🏦','🏧','🧾','📈','📉','💹','💼','🏆','🏅','🎯','🐷','🫙','🧧','➕','➖','💲','🤑','🎰','📮','📃','🧮','⚖️'] },
+  { name: 'สัญลักษณ์และอื่นๆ', icons: ['⭐','🌟','✨','💫','❤️','🧡','💛','💚','💙','💜','🤍','🖤','🔶','🔷','🔴','🟠','🟡','🟢','🔵','🟣','🟤','⚫','⚪','📌','🏷️','🔖','🗂️','❓','❗','💯','✅','🔔','🍀','🌈','☀️','🌙','⚡','🔥'] }
 ];
 
 // ไอคอนสำหรับสินทรัพย์ — วงกลมสีไว้แทนธนาคาร (เช่น 🟢 กสิกร 🔵 กรุงไทย 🟣 ไทยพาณิชย์ 🟡 กรุงศรี)
 var ASSET_ICON_LIBRARY = [
-  { name: 'เงินสดและกระเป๋า', icons: ['💵','💴','💶','💷','👛','👝','💼','🐷','🫙','🧧','💰','🪙'] },
-  { name: 'ธนาคารและบัตร', icons: ['🏦','💳','🏧','📱','📲','🟢','🔵','🟣','🟡','🟠','🔴','🟤','⚫','⚪'] },
-  { name: 'ลงทุนและออม', icons: ['📈','📊','💹','📉','🥇','💎','🏠','🏢','🚗','🌱','🎯','🗓️'] },
-  { name: 'ประกันและเกษียณ', icons: ['🛡️','☂️','🏥','🧓','🏖️','🌴','⛱️','🔒','🗝️','📜'] },
-  { name: 'อื่นๆ', icons: ['⭐','❤️','✨','🎁','🍚','🛒','✈️','🎓','👶','🐶','📌','❓'] }
-];
+  { name: 'เงินสดและกระเป๋า', icons: ['💵','💴','💶','💷','👛','👝','💼','🐷','🫙','🧧','💰','🪙','🎒','👜','🗃️','📦'] },
+  { name: 'ธนาคารและบัตร', icons: ['🏦','💳','🏧','📱','📲','💻','🟢','🔵','🟣','🟡','🟠','🔴','🟤','⚫','⚪','🟩','🟦','🟪','🟨','🟧','🟥','🟫'] },
+  { name: 'ลงทุนและออม', icons: ['📈','📊','💹','📉','🥇','💎','🏠','🏢','🏘️','🚗','🌱','🌳','🎯','🗓️','⏳','🧮','🪙','🏆','💍','⌚'] },
+  { name: 'ประกันและเกษียณ', icons: ['🛡️','☂️','🏥','🧓','👵','👴','🏖️','🌴','⛱️','🔒','🗝️','📜','🩺','👶','🎓'] }
+].concat(ICON_LIBRARY);
 
 /** ไอคอนพื้นฐานของสินทรัพย์ที่ยังไม่ได้เลือก — เดาจากชื่อกลุ่ม/ชื่อสินทรัพย์ */
 function defaultAssetIcon(asset) {
@@ -185,6 +189,117 @@ function groupCountState(group) {
   if (!list.length) return group.includeInTotal ? 'all' : 'none';
   var n = list.filter(function (a) { return assetCounted(a, group); }).length;
   return n === list.length ? 'all' : (n === 0 ? 'none' : 'some');
+}
+
+// ===================== ไอคอนของฉัน: อีโมจิที่พิมพ์เอง หรือรูปที่อัปโหลด =====================
+// รูปถูกย่อเหลือ 96×96 แล้วเก็บเป็นข้อความ (data URL) ในเซลล์ไอคอนเดิมของชีต — ไม่ใช่รูปแทรกในเซลล์
+// (รูปแทรกในเซลล์แอปอ่านไม่ได้) จึงซิงก์ไปทุกเครื่องและใช้ออฟไลน์ได้เหมือนอีโมจิ
+
+function isImgIcon(ic) { return /^data:image\//.test(String(ic || '')); }
+/** HTML สำหรับแสดงไอคอน — รองรับทั้งอีโมจิและรูป */
+function iconHtml(ic) {
+  return isImgIcon(ic) ? '<img class="ic-img" src="' + escapeHtml(ic) + '" alt="">' : escapeHtml(ic);
+}
+/** ไอคอนในข้อความล้วน (เช่นตัวเลือกใน select) — รูปแสดงไม่ได้ จึงใช้ 🖼️ แทน */
+function iconText(ic) { return isImgIcon(ic) ? '🖼️' : (ic || ''); }
+
+function libraryHas(ic) {
+  return ICON_LIBRARY.concat(ASSET_ICON_LIBRARY).some(function (g) { return g.icons.indexOf(ic) >= 0; });
+}
+/** ไอคอนที่ผู้ใช้ใส่เอง (ไม่อยู่ในคลัง) ที่ใช้อยู่ในหมวด/สินทรัพย์ตอนนี้ */
+function myIcons() {
+  var out = [];
+  function add(ic) { if (ic && !libraryHas(ic) && out.indexOf(ic) < 0) out.push(ic); }
+  ['income', 'expense'].forEach(function (t) { (state.categories[t] || []).forEach(function (c) { add(c.icon); }); });
+  allAssetsFlat().forEach(function (a) { add(a.icon); });
+  return out;
+}
+
+/** ตัดตัวอักษรตัวแรกแบบรู้จักอีโมจิผสม (เช่น 👨‍👩‍👧) */
+function firstGrapheme(str) {
+  str = String(str || '').trim();
+  if (!str) return '';
+  try {
+    if (window.Intl && Intl.Segmenter) {
+      var it = new Intl.Segmenter('th', { granularity: 'grapheme' }).segment(str)[Symbol.iterator]();
+      return it.next().value.segment;
+    }
+  } catch (e) { /* ใช้วิธีสำรอง */ }
+  return Array.from(str)[0];
+}
+
+/** ย่อรูปเป็นสี่เหลี่ยมจัตุรัส 96×96 (ตัดกลางภาพ) แล้วคืน data URL ขนาดเล็ก */
+function imageFileToIcon(file) {
+  return new Promise(function (resolve, reject) {
+    var reader = new FileReader();
+    reader.onerror = function () { reject(new Error('อ่านรูปไม่สำเร็จ')); };
+    reader.onload = function () {
+      var img = new Image();
+      img.onerror = function () { reject(new Error('เปิดรูปไม่สำเร็จ')); };
+      img.onload = function () {
+        var S = 96, c = document.createElement('canvas');
+        c.width = S; c.height = S;
+        var side = Math.min(img.width, img.height);
+        c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, S, S);
+        var url = c.toDataURL('image/png');
+        if (url.length > 30000) url = c.toDataURL('image/jpeg', 0.85);   // เซลล์ชีตเก็บได้ไม่เกิน 50,000 ตัวอักษร
+        resolve(url);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * วาดตัวเลือกไอคอน (ใช้ร่วมกันทั้งหมวดหมู่และสินทรัพย์)
+ * ด้านบนมีช่อง "ใส่เอง": พิมพ์/วางอีโมจิ หรือเลือกรูปของฉัน
+ */
+function renderIconChooser(host, library, current, onPick) {
+  var mine = myIcons();
+  if (current && !libraryHas(current) && mine.indexOf(current) < 0) mine.unshift(current);
+  function grid(icons) {
+    return '<div class="icon-grid">' + icons.map(function (ic) {
+      return '<button type="button" class="icon-opt' + (ic === current ? ' selected' : '') + '" data-ic="' +
+        escapeHtml(ic) + '">' + iconHtml(ic) + '</button>';
+    }).join('') + '</div>';
+  }
+  host.innerHTML =
+    '<div class="icon-custom">' +
+    '  <div class="icon-custom-title">ใส่ไอคอนเอง</div>' +
+    '  <div class="icon-custom-row">' +
+    '    <input type="text" class="icon-emoji-input" placeholder="พิมพ์/วางอีโมจิ เช่น 🥑" autocomplete="off">' +
+    '    <button type="button" class="chip-btn icon-emoji-use">ใช้</button>' +
+    '  </div>' +
+    '  <label class="chip-btn icon-photo-btn">📷 ใช้รูปของฉัน<input type="file" accept="image/*" hidden></label>' +
+    '  <div class="icon-custom-hint">อีโมจิ: กดปุ่ม 🌐/😀 บนแป้นพิมพ์ iPhone · รูป: ถ่ายใหม่หรือเลือกจากอัลบั้ม (ย่อให้อัตโนมัติ)</div>' +
+    '</div>' +
+    (mine.length ? '<div class="icon-group-title">ไอคอนของฉัน</div>' + grid(mine) : '') +
+    library.map(function (g) {
+      return '<div class="icon-group-title">' + escapeHtml(g.name) + '</div>' + grid(g.icons);
+    }).join('');
+
+  host.querySelectorAll('.icon-opt').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      host.querySelectorAll('.icon-opt.selected').forEach(function (x) { x.classList.remove('selected'); });
+      btn.classList.add('selected');
+      onPick(btn.dataset.ic);
+    });
+  });
+  var input = host.querySelector('.icon-emoji-input');
+  function useTyped() {
+    var ic = firstGrapheme(input.value);
+    if (!ic) { showToast('พิมพ์หรือวางอีโมจิก่อน'); return; }
+    onPick(ic);
+  }
+  host.querySelector('.icon-emoji-use').addEventListener('click', useTyped);
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); useTyped(); } });
+  host.querySelector('.icon-photo-btn input').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    imageFileToIcon(f).then(onPick).catch(function (err) { showToast(err.message); });
+    e.target.value = '';
+  });
 }
 
 /** ไอคอนของหมวดหมู่ (ไว้แสดงในรายการ) — ถ้าหาไม่เจอใช้ไอคอนพื้นฐานตามประเภท */
@@ -939,7 +1054,7 @@ function renderHome() {
       var isTransfer = item.type === 'transfer';
       var sign = (item.type === 'expense') ? '-' : '';
       row.innerHTML =
-        '<div class="tx-icon">' + escapeHtml(isTransfer ? '🔁' : categoryIcon(item.type, item.category)) + '</div>' +
+        '<div class="tx-icon">' + iconHtml(isTransfer ? '🔁' : categoryIcon(item.type, item.category)) + '</div>' +
         '<div class="tx-info">' +
         '  <div class="tx-cat">' + escapeHtml(isTransfer ? 'โอนเงิน' : item.category) +
              (item.pending ? '<span class="pending-badge">รอซิงก์</span>' : '') + '</div>' +
@@ -1168,7 +1283,7 @@ function renderAssets() {
         '  <button class="order-btn down"' + (idx === g.assets.length - 1 ? ' disabled' : '') + '>▼</button>' +
         '</div>' +
         '<div class="asset-main">' +
-        '  <div class="asset-icon">' + escapeHtml(assetIcon(a)) + '</div>' +
+        '  <div class="asset-icon">' + iconHtml(assetIcon(a)) + '</div>' +
         '  <div class="asset-name">' + escapeHtml(a.name) +
              (!counted && st === 'some' ? '<span class="excluded-tag small">ไม่นับ</span>' : '') + '</div>' +
         '  <div class="asset-balance">' + escapeHtml(formatBaht(a.balance)) + '</div>' +
@@ -1319,7 +1434,7 @@ function renderCategoryTiles(elId, type) {
   var list = state.categories[type] || [];
   el.innerHTML = list.map(function (c, i) {
     return '<button class="cat-tile" data-i="' + i + '">' +
-      '<span class="cat-icon">' + escapeHtml(c.icon || categoryIcon(type, '')) + '</span>' +
+      '<span class="cat-icon">' + iconHtml(c.icon || categoryIcon(type, '')) + '</span>' +
       '<span class="cat-name">' + escapeHtml(c.name) + '</span></button>';
   }).join('') +
     '<button class="cat-tile add" data-add="1"><span class="cat-icon">＋</span><span class="cat-name">เพิ่ม</span></button>';
@@ -1370,7 +1485,7 @@ function renderReorderList() {
   el.innerHTML = list.map(function (c, i) {
     return '<div class="reorder-row">' +
       '<span class="reorder-num">' + (i + 1) + '</span>' +
-      '<span class="cat-icon">' + escapeHtml(c.icon || categoryIcon(reorderEdit.type, '')) + '</span>' +
+      '<span class="cat-icon">' + iconHtml(c.icon || categoryIcon(reorderEdit.type, '')) + '</span>' +
       '<span class="reorder-name">' + escapeHtml(c.name) + '</span>' +
       '<button class="order-btn big" data-i="' + i + '" data-d="-1"' + (i === 0 ? ' disabled' : '') + ' aria-label="เลื่อนขึ้น">▲</button>' +
       '<button class="order-btn big" data-i="' + i + '" data-d="1"' + (i === list.length - 1 ? ' disabled' : '') + ' aria-label="เลื่อนลง">▼</button>' +
@@ -1419,22 +1534,12 @@ function openCategoryModal(type, cat) {
 }
 
 function renderIconPicker() {
-  $('categoryIconPreview').textContent = categoryEdit.icon;
-  var host = $('iconPicker');
-  host.innerHTML = ICON_LIBRARY.map(function (g) {
-    return '<div class="icon-group-title">' + escapeHtml(g.name) + '</div><div class="icon-grid">' +
-      g.icons.map(function (ic) {
-        return '<button class="icon-opt' + (ic === categoryEdit.icon ? ' selected' : '') + '" data-ic="' +
-          escapeHtml(ic) + '" aria-label="' + escapeHtml(ic) + '">' + escapeHtml(ic) + '</button>';
-      }).join('') + '</div>';
-  }).join('');
-  host.querySelectorAll('.icon-opt').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      categoryEdit.icon = btn.dataset.ic;
-      $('categoryIconPreview').textContent = categoryEdit.icon;
-      host.querySelectorAll('.icon-opt.selected').forEach(function (x) { x.classList.remove('selected'); });
-      btn.classList.add('selected');
-    });
+  $('categoryIconPreview').innerHTML = iconHtml(categoryEdit.icon);
+  renderIconChooser($('iconPicker'), ICON_LIBRARY, categoryEdit.icon, function (ic) {
+    categoryEdit.icon = ic;
+    $('categoryIconPreview').innerHTML = iconHtml(ic);
+    var input = $('iconPicker').querySelector('.icon-emoji-input');
+    if (!isImgIcon(ic) && input && input.value) showToast('เลือกไอคอน ' + ic + ' แล้ว');
   });
 }
 
@@ -1501,7 +1606,7 @@ function populateCategorySelect() {
   sel.innerHTML = list.length
     ? list.map(function (c) {
         return '<option value="' + escapeHtml(c.name) + '">' +
-          escapeHtml(c.icon || '') + ' ' + escapeHtml(c.name) + '</option>';
+          escapeHtml(iconText(c.icon)) + ' ' + escapeHtml(c.name) + '</option>';
       }).join('')
     : '<option value="">— เพิ่มหมวดหมู่ในแท็บเพิ่มเติมก่อน —</option>';
   sel.selectedIndex = 0;
@@ -1520,7 +1625,7 @@ function populateAccountSelect() {
   var html = assets.length
     ? assets.map(function (a) {
         return '<option value="' + escapeHtml(a.name) + '">' +
-          escapeHtml(assetIcon(a) + ' ' + a.name + '  ·  ' + formatBaht(a.balance)) + '</option>';
+          escapeHtml(iconText(assetIcon(a)) + ' ' + a.name + '  ·  ' + formatBaht(a.balance)) + '</option>';
       }).join('')
     : '<option value="">— เพิ่มสินทรัพย์ในแท็บสินทรัพย์ก่อน —</option>';
   ['txAccount', 'txToAccount'].forEach(function (id) {
@@ -1636,7 +1741,7 @@ function assetByName(name) {
 function acctHtml(name, small) {
   var a = assetByName(name);
   if (!name) return '<span class="acct-name">เลือกบัญชี</span>';
-  return '<span class="acct-icon">' + escapeHtml(a ? assetIcon(a) : '💰') + '</span>' +
+  return '<span class="acct-icon">' + iconHtml(a ? assetIcon(a) : '💰') + '</span>' +
     '<span class="acct-text"><span class="acct-name">' + escapeHtml(name) + '</span>' +
     (a ? '<span class="acct-bal">' + escapeHtml(formatBaht(a.balance)) + '</span>' : '') + '</span>';
 }
@@ -1648,7 +1753,7 @@ function renderTxCatGrid() {
   grid.innerHTML = [].map.call(sel.options, function (o) {
     if (!o.value) return '<div class="tx-cat-empty">' + escapeHtml(o.textContent) + '</div>';
     return '<button type="button" class="tx-cat' + (o.value === sel.value ? ' selected' : '') + '" data-v="' + escapeHtml(o.value) + '">' +
-      '<span class="cat-icon">' + escapeHtml(categoryIcon(type, o.value)) + '</span>' +
+      '<span class="cat-icon">' + iconHtml(categoryIcon(type, o.value)) + '</span>' +
       '<span class="cat-name">' + escapeHtml(o.value) + '</span></button>';
   }).join('');
   grid.querySelectorAll('.tx-cat').forEach(function (b) {
@@ -1681,7 +1786,7 @@ function openAccountPicker(selectId) {
     html += '<div class="acct-group">' + escapeHtml(g.name) + '</div>';
     g.assets.forEach(function (a) {
       html += '<button type="button" class="acct-row' + (a.name === cur ? ' selected' : '') + '" data-v="' + escapeHtml(a.name) + '">' +
-        '<span class="acct-icon">' + escapeHtml(assetIcon(a)) + '</span><span class="acct-name">' + escapeHtml(a.name) + '</span>' +
+        '<span class="acct-icon">' + iconHtml(assetIcon(a)) + '</span><span class="acct-name">' + escapeHtml(a.name) + '</span>' +
         '<span class="acct-bal">' + escapeHtml(formatBaht(a.balance)) + '</span><span class="acct-check">' + (a.name === cur ? '✓' : '') + '</span></button>';
     });
   });
@@ -1774,7 +1879,7 @@ function openTxModal(edit) {
     $('txAmount').value = it.amount;
     $('txNote').value = it.note || '';
     // หมวด/บัญชีที่ถูกลบไปแล้วก็ยังแสดงค่าเดิมให้ ไม่เปลี่ยนเองโดยไม่รู้ตัว
-    if (it.type !== 'transfer') selectOrAdd($('txCategory'), it.category, categoryIcon(it.type, it.category) + ' ' + it.category);
+    if (it.type !== 'transfer') selectOrAdd($('txCategory'), it.category, iconText(categoryIcon(it.type, it.category)) + ' ' + it.category);
     selectOrAdd($('txAccount'), it.account);
     if (it.type === 'transfer') selectOrAdd($('txToAccount'), it.toAccount);
   } else {
@@ -1942,7 +2047,7 @@ function openEditBalanceModal(asset, group) {
   $('editBalanceValue').value = asset.balance;
   $('editAssetName').value = asset.name;
   $('assetRenameNote').hidden = true;
-  $('editAssetIconBtn').textContent = assetIcon(asset);
+  $('editAssetIconBtn').innerHTML = iconHtml(assetIcon(asset));
   renderAssetIncludeControl();
   populateGroupSelects(group ? group.name : asset.group);
   openModal('editBalanceModal');
@@ -1980,21 +2085,10 @@ function setAssetIncludeHandler(checked) {
 var iconPickerCallback = null;
 
 function openIconPicker(title, current, library, onPick) {
-  iconPickerCallback = onPick;
   $('iconPickerTitle').textContent = title;
-  var host = $('iconPickerModalBody');
-  host.innerHTML = library.map(function (g) {
-    return '<div class="icon-group-title">' + escapeHtml(g.name) + '</div><div class="icon-grid">' +
-      g.icons.map(function (ic) {
-        return '<button class="icon-opt' + (ic === current ? ' selected' : '') + '" data-ic="' +
-          escapeHtml(ic) + '" aria-label="' + escapeHtml(ic) + '">' + escapeHtml(ic) + '</button>';
-      }).join('') + '</div>';
-  }).join('');
-  host.querySelectorAll('.icon-opt').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      closeModal('iconPickerModal');
-      if (iconPickerCallback) iconPickerCallback(btn.dataset.ic);
-    });
+  renderIconChooser($('iconPickerModalBody'), library, current, function (ic) {
+    closeModal('iconPickerModal');
+    onPick(ic);
   });
   openModal('iconPickerModal');
 }
@@ -2004,7 +2098,7 @@ function changeAssetIcon() {
   var found = findAssetLocal(name);
   if (!found) return;
   openIconPicker('ไอคอนของ ' + name, assetIcon(found.asset), ASSET_ICON_LIBRARY, function (ic) {
-    $('editAssetIconBtn').textContent = ic;
+    $('editAssetIconBtn').innerHTML = iconHtml(ic);
     performWrite('setAssetIcon', [name, ic], function () {
       var f = findAssetLocal(name);
       if (f) f.asset.icon = ic;
@@ -2254,7 +2348,7 @@ function bindEvents() {
     var guess = state.newAssetIcon || defaultAssetIcon({ name: $('assetName').value, group: $('assetGroupSelect').value });
     openIconPicker('เลือกไอคอนสินทรัพย์', guess, ASSET_ICON_LIBRARY, function (ic) {
       state.newAssetIcon = ic;
-      $('newAssetIconBtn').textContent = ic;
+      $('newAssetIconBtn').innerHTML = iconHtml(ic);
     });
   });
   // ยังไม่ได้เลือกไอคอนเอง → แสดงไอคอนที่เดาจากชื่อ/กลุ่มให้เห็นก่อน

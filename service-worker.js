@@ -9,7 +9,7 @@
  */
 
 // เปลี่ยนเลขเวอร์ชันนี้ทุกครั้งที่แก้ไฟล์หน้าตาแอป เพื่อบังคับให้เครื่องโหลดของใหม่
-const CACHE_NAME = 'moo-mee-tang-v14';
+const CACHE_NAME = 'moo-mee-tang-v15';
 
 const APP_SHELL = [
   './',

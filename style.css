@@ -648,3 +648,13 @@ html:not(.no-mascot) .summary-card.has-pig .balance-label{padding-right:84px;}
 .tx-pig{width:110px;margin:auto auto 0;padding-top:16px;opacity:.95;animation:pig-bob 3.2s ease-in-out infinite;
   filter:drop-shadow(0 3px 6px rgba(0,0,0,.15));}
 @media (prefers-reduced-motion:reduce){.tx-pig{animation:none;}}
+
+/* ===== v15: ไอคอนของฉัน (อีโมจิ/รูป) ===== */
+.ic-img{width:1.3em;height:1.3em;object-fit:cover;border-radius:24%;vertical-align:middle;display:inline-block;}
+.icon-opt .ic-img{width:80%;height:80%;}
+.icon-custom{background:var(--bg-card);border:1px dashed var(--border);border-radius:var(--radius-md);padding:10px;margin:6px 0 4px;}
+.icon-custom-title{font-size:12.5px;font-weight:700;margin-bottom:8px;}
+.icon-custom-row{display:flex;gap:8px;margin-bottom:8px;}
+.modal .icon-custom input.icon-emoji-input{flex:1;padding:9px 10px;font-size:18px;}
+.icon-photo-btn{display:inline-block !important;margin:0 !important;font-size:13px !important;color:var(--text-primary) !important;}
+.icon-custom-hint{font-size:11px;color:var(--text-secondary);margin-top:8px;line-height:1.5;}
