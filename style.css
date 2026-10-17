@@ -665,3 +665,17 @@ html:not(.no-mascot) .summary-card.has-pig .balance-label{padding-right:84px;}
 .tx-row .tx-cat.income{color:var(--green);background:color-mix(in srgb, var(--green) 14%, transparent);}
 .tx-row .tx-cat.transfer{color:var(--transfer);background:color-mix(in srgb, var(--transfer) 14%, transparent);}
 .tx-row .tx-account{margin-top:3px;}
+
+/* ===== v17: แถบบนเต็มความกว้าง — โลโก้ใหญ่ขึ้น + หมูโบกมือข้างปุ่มซิงก์ ===== */
+.header-top{gap:8px;min-height:64px;}
+.brand{flex:1;gap:10px;}
+.brand-logo{width:54px;height:54px;border-radius:15px;}
+.brand-word{height:auto;width:auto;max-height:58px;max-width:calc(100% - 64px);flex:0 1 auto;min-width:0;object-fit:contain;}
+.header-right{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.header-pig{width:62px;height:auto;margin:-10px -2px -14px 0;animation:pig-bob 3.2s ease-in-out infinite;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,.25));}
+.sync-btn{width:38px;height:38px;}
+html.no-mascot .brand-word{max-height:62px;}
+@media (max-width:360px){.header-pig{width:50px;}.brand-logo{width:46px;height:46px;}}
+@media (prefers-reduced-motion:reduce){.header-pig{animation:none;}}
+@media (min-width:420px){.brand-word{max-height:68px;}.header-pig{width:68px;}}
