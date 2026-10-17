@@ -9,7 +9,7 @@
  */
 
 // เปลี่ยนเลขเวอร์ชันนี้ทุกครั้งที่แก้ไฟล์หน้าตาแอป เพื่อบังคับให้เครื่องโหลดของใหม่
-const CACHE_NAME = 'moo-mee-tang-v17';
+const CACHE_NAME = 'moo-mee-tang-v18';
 
 const APP_SHELL = [
   './',
@@ -23,6 +23,7 @@ const APP_SHELL = [
   './img/pig-sleep.png',
   './img/pig-wave.png',
   './img/pig-think.png',
+  './img/pig-analyst.png',
   './img/pig-cheer.png',
   './img/pig-sit.png',
   './img/pig-peek.png',

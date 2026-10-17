@@ -679,3 +679,8 @@ html.no-mascot .brand-word{max-height:62px;}
 @media (max-width:360px){.header-pig{width:50px;}.brand-logo{width:46px;height:46px;}}
 @media (prefers-reduced-motion:reduce){.header-pig{animation:none;}}
 @media (min-width:420px){.brand-word{max-height:68px;}.header-pig{width:68px;}}
+
+/* ===== v18: หมูนักวิเคราะห์เป็นภาพหัวหน้าวิเคราะห์ (ไม่ทับกราฟ/ตัวเลข) ===== */
+.analysis-hero{display:block;width:100%;max-width:300px;margin:-6px auto 6px;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.18));animation:pig-bob 3.6s ease-in-out infinite;}
+@media (prefers-reduced-motion:reduce){.analysis-hero{animation:none;}}
