@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-15-pwa-15';
+var APP_VERSION = '2026-10-15-pwa-16';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1056,7 +1056,7 @@ function renderHome() {
       row.innerHTML =
         '<div class="tx-icon">' + iconHtml(isTransfer ? '🔁' : categoryIcon(item.type, item.category)) + '</div>' +
         '<div class="tx-info">' +
-        '  <div class="tx-cat">' + escapeHtml(isTransfer ? 'โอนเงิน' : item.category) +
+        '  <div class="tx-cat ' + item.type + '">' + escapeHtml(isTransfer ? 'โอนเงิน' : item.category) +
              (item.pending ? '<span class="pending-badge">รอซิงก์</span>' : '') + '</div>' +
         '  <div class="tx-account">' + escapeHtml(isTransfer ? item.account + ' → ' + item.toAccount : item.account) +
              (item.note ? ' · ' + escapeHtml(item.note) : '') + '</div>' +
