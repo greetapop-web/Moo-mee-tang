@@ -346,6 +346,35 @@
     </div>
   </div>
 
+  <!-- Modal: ประวัติการใช้ของสินทรัพย์รายเดือน -->
+  <div id="assetHistoryModal" class="modal-overlay">
+    <div class="modal history-sheet">
+      <div class="modal-header">
+        <div class="history-title">
+          <div id="historyIcon" class="asset-icon"></div>
+          <div>
+            <div id="historyName"></div>
+            <div id="historyBalance" class="history-sub"></div>
+          </div>
+        </div>
+        <button id="closeAssetHistoryBtn" class="icon-btn" aria-label="ปิด">✕</button>
+      </div>
+      <div class="history-month">
+        <button id="historyPrevBtn" class="nav-arrow" aria-label="เดือนก่อนหน้า">‹</button>
+        <span id="historyMonthLabel"></span>
+        <button id="historyNextBtn" class="nav-arrow" aria-label="เดือนถัดไป">›</button>
+      </div>
+      <div class="history-summary">
+        <div><span>เข้า</span><b id="historyIn" class="income"></b></div>
+        <div><span>ออก</span><b id="historyOut" class="expense"></b></div>
+        <div><span>สุทธิ</span><b id="historyNet"></b></div>
+      </div>
+      <div id="historyList"></div>
+      <p id="historyEmpty" class="empty-state" hidden></p>
+      <button id="historyManageBtn" class="secondary-btn">⚙️ จัดการสินทรัพย์นี้ (ชื่อ ยอด ไอคอน กลุ่ม)</button>
+    </div>
+  </div>
+
   <!-- Modal: จัดการกลุ่มสินทรัพย์ -->
   <div id="groupsModal" class="modal-overlay">
     <div class="modal">

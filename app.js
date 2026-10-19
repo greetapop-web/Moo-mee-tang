@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-15-pwa-18';
+var APP_VERSION = '2026-10-19-pwa-19';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1289,7 +1289,7 @@ function renderAssets() {
         '  <div class="asset-balance">' + escapeHtml(formatBaht(a.balance)) + '</div>' +
         '</div>';
 
-      card.querySelector('.asset-main').addEventListener('click', function () { openEditBalanceModal(a, g); });
+      card.querySelector('.asset-main').addEventListener('click', function () { openAssetHistory(a.name); });
       card.querySelector('.order-btn.up').addEventListener('click', function () { moveAssetLocalAndQueue(a, g, -1); });
       card.querySelector('.order-btn.down').addEventListener('click', function () { moveAssetLocalAndQueue(a, g, 1); });
 
@@ -1298,6 +1298,138 @@ function renderAssets() {
 
     list.appendChild(block);
   });
+  if (state.historyAsset && $('assetHistoryModal').classList.contains('open')) renderAssetHistory();
+}
+
+// ===================== ประวัติการใช้ของสินทรัพย์ (รายเดือน) =====================
+
+/** แตะสินทรัพย์ = ดูว่าเดือนนี้เงินก้อนนี้ถูกใช้/รับ/โอนไปทำอะไรบ้าง */
+function openAssetHistory(name) {
+  state.historyAsset = name;
+  state.historyYear = state.year;
+  state.historyMonth = state.monthIndex;
+  renderAssetHistory();
+  openModal('assetHistoryModal');
+  ensureHistoryMonthLoaded();
+}
+
+function shiftHistoryMonth(delta) {
+  var m = state.historyMonth + delta, y = state.historyYear;
+  if (m < 0) { m = 11; y--; }
+  if (m > 11) { m = 0; y++; }
+  state.historyMonth = m; state.historyYear = y;
+  renderAssetHistory();
+  ensureHistoryMonthLoaded();
+}
+
+function ensureHistoryMonthLoaded() {
+  var y = state.historyYear, m = state.historyMonth;
+  if (state.months[monthKey(y, m)] || !isOnline()) return;
+  fetchMonth(y, m)
+    .then(function () { if (state.historyYear === y && state.historyMonth === m) renderAssetHistory(); })
+    .catch(function (err) { console.warn('fetch month failed', err); });
+}
+
+/** ผลของรายการหนึ่งต่อสินทรัพย์นี้: +เข้า / −ออก / 0 ไม่เกี่ยว */
+function historyEffect(item, name) {
+  var amt = Number(item.amount) || 0;
+  if (item.type === 'transfer') {
+    if (item.account === name && item.toAccount === name) return 0;
+    if (item.account === name) return -amt;
+    if (item.toAccount === name) return amt;
+    return 0;
+  }
+  if (item.account !== name) return 0;
+  return item.type === 'income' ? amt : -amt;
+}
+
+function renderAssetHistory() {
+  var name = state.historyAsset;
+  var found = findAssetLocal(name);
+  if (!found) { closeModal('assetHistoryModal'); return; }
+  var asset = found.asset;
+  var y = state.historyYear, m = state.historyMonth;
+  var month = state.months[monthKey(y, m)];
+
+  $('historyIcon').innerHTML = iconHtml(assetIcon(asset));
+  $('historyName').textContent = asset.name;
+  $('historyBalance').textContent = 'คงเหลือตอนนี้ ' + formatBaht(asset.balance);
+  $('historyMonthLabel').textContent = THAI_MONTHS_FULL[m] + ' ' + (y + 543);
+
+  var inSum = 0, outSum = 0, count = 0;
+  var list = $('historyList');
+  list.innerHTML = '';
+
+  ((month && month.days) || []).forEach(function (day) {
+    var rows = [];
+    (day.items || []).slice().reverse().forEach(function (item) {
+      var eff = historyEffect(item, name);
+      var involved = item.account === name || item.toAccount === name;
+      if (!involved) return;
+      if (eff > 0) inSum += eff; else outSum += -eff;
+      count++;
+      rows.push({ item: item, eff: eff });
+    });
+    if (!rows.length) return;
+
+    var dayIn = 0, dayOut = 0;
+    rows.forEach(function (r) { if (r.eff > 0) dayIn += r.eff; else dayOut += -r.eff; });
+
+    var group = document.createElement('div');
+    group.className = 'day-group';
+    var header = document.createElement('div');
+    header.className = 'day-header';
+    header.innerHTML = '<span>' + escapeHtml(day.label || thaiDateLabel(day.key)) + '</span>' +
+      '<span>' + (dayOut ? '−' + escapeHtml(formatBaht(dayOut)) : '') +
+      (dayIn && dayOut ? ' · ' : '') + (dayIn ? '+' + escapeHtml(formatBaht(dayIn)) : '') + '</span>';
+    group.appendChild(header);
+
+    var card = document.createElement('div');
+    card.className = 'tx-card';
+    rows.forEach(function (r) {
+      var item = r.item;
+      var isTransfer = item.type === 'transfer';
+      var title = isTransfer
+        ? (item.account === name ? 'โอนออก → ' + item.toAccount : 'โอนเข้า ← ' + item.account)
+        : item.category;
+      var cls = isTransfer ? 'transfer' : item.type;
+      var row = document.createElement('div');
+      row.className = 'tx-row' + (item.pending ? ' pending' : '');
+      row.innerHTML =
+        '<div class="tx-icon">' + iconHtml(isTransfer ? '🔁' : categoryIcon(item.type, item.category)) + '</div>' +
+        '<div class="tx-info">' +
+        '  <div class="tx-cat ' + cls + '">' + escapeHtml(isTransfer ? 'โอนเงิน' : item.category) +
+             (item.pending ? '<span class="pending-badge">รอซิงก์</span>' : '') + '</div>' +
+        '  <div class="tx-account">' + escapeHtml(isTransfer ? title : (item.note || (item.type === 'income' ? 'รายรับ' : 'รายจ่าย'))) +
+             (isTransfer && item.note ? ' · ' + escapeHtml(item.note) : '') + '</div>' +
+        '</div>' +
+        '<div class="tx-amount ' + (r.eff > 0 ? 'income' : (isTransfer ? 'transfer' : 'expense')) + '">' +
+          (r.eff > 0 ? '+' : (r.eff < 0 ? '−' : '')) + escapeHtml(formatBaht(Number(item.amount) || 0)) + '</div>';
+      row.addEventListener('click', function () {
+        if (item.pending) { showToast('รายการนี้ยังรอซิงก์อยู่ แก้ไขได้หลังซิงก์ขึ้นชีตแล้ว'); return; }
+        openTxModal({ item: item, dateStr: day.key });
+      });
+      card.appendChild(row);
+    });
+    group.appendChild(card);
+    list.appendChild(group);
+  });
+
+  $('historyIn').textContent = '+' + formatBaht(inSum);
+  $('historyOut').textContent = '−' + formatBaht(outSum);
+  var net = inSum - outSum;
+  var netEl = $('historyNet');
+  netEl.textContent = (net > 0 ? '+' : (net < 0 ? '−' : '')) + formatBaht(Math.abs(net));
+  netEl.style.color = net < 0 ? 'var(--red)' : (net > 0 ? 'var(--green)' : '');
+
+  var empty = $('historyEmpty');
+  if (count) { empty.hidden = true; }
+  else {
+    empty.hidden = false;
+    empty.textContent = month
+      ? 'เดือนนี้ยังไม่มีรายการของ ' + asset.name
+      : (isOnline() ? 'กำลังโหลดข้อมูลเดือนนี้...' : 'ยังไม่มีข้อมูลเดือนนี้ในเครื่อง ต่อเน็ตแล้วลองใหม่');
+  }
 }
 
 function moveAssetLocalAndQueue(asset, group, direction) {
@@ -2107,6 +2239,7 @@ function changeAssetIcon() {
 }
 
 function renameAssetLocal(oldName, newName) {
+  if (state.historyAsset === oldName) state.historyAsset = newName;
   var found = findAssetLocal(oldName);
   if (found) found.asset.name = newName;
   Object.keys(state.months).forEach(function (k) {
@@ -2302,6 +2435,13 @@ function bindEvents() {
     btn.addEventListener('click', function () { switchTab(btn.dataset.tab); });
   });
 
+  on('closeAssetHistoryBtn', 'click', function () { closeModal('assetHistoryModal'); });
+  on('historyPrevBtn', 'click', function () { shiftHistoryMonth(-1); });
+  on('historyNextBtn', 'click', function () { shiftHistoryMonth(1); });
+  on('historyManageBtn', 'click', function () {
+    var f = findAssetLocal(state.historyAsset);
+    if (f) openEditBalanceModal(f.asset, f.group);
+  });
   on('prevMonthBtn', 'click', function () { shiftMonth(-1); });
   on('nextMonthBtn', 'click', function () { shiftMonth(1); });
   on('syncBtn', 'click', function () { fullSync({ notify: true }); });
