@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-19-pwa-19';
+var APP_VERSION = '2026-10-19-pwa-20';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1407,7 +1407,7 @@ function renderAssetHistory() {
           (r.eff > 0 ? '+' : (r.eff < 0 ? '−' : '')) + escapeHtml(formatBaht(Number(item.amount) || 0)) + '</div>';
       row.addEventListener('click', function () {
         if (item.pending) { showToast('รายการนี้ยังรอซิงก์อยู่ แก้ไขได้หลังซิงก์ขึ้นชีตแล้ว'); return; }
-        openTxModal({ item: item, dateStr: day.key });
+        openTxModal({ item: item, dateStr: day.key, year: y, monthIndex: m });
       });
       card.appendChild(row);
     });
@@ -1951,14 +1951,16 @@ function selectIfExists(sel, value) {
 }
 function applyLastAccounts(type) {
   var last = loadLastTx();
+  var preset = txPresetAccount;
   if (type === 'transfer') {
-    selectIfExists($('txAccount'), last.transferFrom || last.account);
-    selectIfExists($('txToAccount'), last.transferTo);
+    selectIfExists($('txAccount'), preset || last.transferFrom || last.account);
+    if (!preset || last.transferTo !== preset) selectIfExists($('txToAccount'), last.transferTo);
   } else {
-    selectIfExists($('txAccount'), last.account);
+    selectIfExists($('txAccount'), preset || last.account);
   }
 }
 
+var txPresetAccount = null; // บัญชีที่ตั้งไว้ให้ตอนเปิดฟอร์มจากหน้าประวัติสินทรัพย์
 var txEdit = null;   // null = เพิ่มรายการใหม่, ไม่ใช่ null = กำลังแก้ไขรายการเดิม
 
 /** สลับรายจ่าย/รายรับ: เปลี่ยนสีฟอร์ม และรายการหมวดหมู่ให้ตรงประเภท */
@@ -1990,12 +1992,17 @@ function selectOrAdd(sel, value, label) {
 }
 
 /** edit = { item, dateStr } เพื่อแก้ไขรายการเดิม หรือไม่ส่งอะไรมาเพื่อเพิ่มรายการใหม่ */
-function openTxModal(edit) {
+function openTxModal(edit, opts) {
+  opts = opts || {};
+  // เปิดจากหน้าประวัติของสินทรัพย์ = ตั้งบัญชีเป็นสินทรัพย์นั้นให้เลย
+  txPresetAccount = opts.account || null;
+  var ey = (edit && edit.year != null) ? edit.year : state.year;
+  var em = (edit && edit.monthIndex != null) ? edit.monthIndex : state.monthIndex;
   txEdit = (edit && edit.item) ? {
     item: edit.item,
     dateStr: edit.dateStr,
-    sheetName: (currentMonth() || {}).sheetName,
-    monthKey: monthKey(state.year, state.monthIndex)
+    sheetName: (state.months[monthKey(ey, em)] || {}).sheetName,
+    monthKey: monthKey(ey, em)
   } : null;
 
   $('receiptStatus').textContent = '';
@@ -2016,9 +2023,10 @@ function openTxModal(edit) {
     if (it.type === 'transfer') selectOrAdd($('txToAccount'), it.toAccount);
   } else {
     // กดดินสอ = เริ่มที่ "รายจ่าย" เสมอ แต่บัญชีจำจากครั้งล่าสุด
-    setTxType('expense');
+    var startType = opts.type || 'expense';
+    setTxType(startType);
     populateAccountSelect();
-    applyLastAccounts('expense');
+    applyLastAccounts(startType);
     setTxDate(defaultNewTxDate());
     $('txAmount').value = '';
     $('txNote').value = '';
@@ -2436,6 +2444,11 @@ function bindEvents() {
   });
 
   on('closeAssetHistoryBtn', 'click', function () { closeModal('assetHistoryModal'); });
+  on('historyAddBar', 'click', function (e) {
+    var b = e.target.closest('[data-add-type]');
+    if (!b || !state.historyAsset) return;
+    openTxModal(null, { type: b.dataset.addType, account: state.historyAsset });
+  });
   on('historyPrevBtn', 'click', function () { shiftHistoryMonth(-1); });
   on('historyNextBtn', 'click', function () { shiftHistoryMonth(1); });
   on('historyManageBtn', 'click', function () {

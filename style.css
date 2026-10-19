@@ -701,3 +701,12 @@ html.no-mascot .brand-word{max-height:62px;}
 .history-summary b.expense{color:var(--red);}
 #historyList .day-group{margin-bottom:12px;}
 #historyManageBtn{margin-top:14px;width:100%;}
+
+/* ===== v20: ปุ่มบันทึกจากหน้าประวัติสินทรัพย์ ===== */
+.history-add{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;margin:0 0 14px;}
+.hadd{border:none;border-radius:var(--radius-md);padding:12px 6px;font:inherit;font-weight:700;font-size:14px;
+  cursor:pointer;color:#fff;white-space:nowrap;}
+.hadd.expense{background:var(--red);}
+.hadd.income{background:var(--green);}
+.hadd.transfer{background:var(--transfer, #4a8fe7);}
+.hadd:active{transform:scale(.97);}
