@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-19-pwa-20';
+var APP_VERSION = '2026-10-19-pwa-21';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -444,7 +444,17 @@ function monthSet(key, value) {
 function outboxAll() {
   return idbRun('outbox', 'readonly', function (s) { return s.getAll(); });
 }
+/** รหัสไม่ซ้ำของแต่ละคำสั่ง — ให้เซิร์ฟเวอร์รู้ว่าคำสั่งนี้เคยบันทึกไปแล้ว ถ้าแอปส่งซ้ำ (เน็ตหลุด/แอปรีโหลดกลางคัน) */
+function newUid() {
+  var r = '';
+  try {
+    var a = new Uint32Array(2); crypto.getRandomValues(a);
+    r = a[0].toString(36) + a[1].toString(36);
+  } catch (e) { r = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2); }
+  return 'u-' + Date.now().toString(36) + '-' + r;
+}
 function outboxAdd(entry) {
+  if (!entry.uid) entry.uid = newUid();
   return idbRun('outbox', 'readwrite', function (s) { return s.add(entry); });
 }
 function outboxDelete(id) {
@@ -563,7 +573,7 @@ function flushOutbox(syncMonthsBack) {
     if (!items.length) return { flushed: 0 };
 
     var batch = items.map(function (it) {
-      return { id: it.id, action: it.action, args: it.args };
+      return { id: it.id, uid: it.uid, action: it.action, args: it.args };
     });
 
     // ขอข้อมูลล่าสุดกลับมาในคำขอเดียวกัน (เซิร์ฟเวอร์รุ่นใหม่จะแนบ bootstrap มาให้)
@@ -1960,6 +1970,7 @@ function applyLastAccounts(type) {
   }
 }
 
+var txSaving = false;       // กำลังบันทึกอยู่ (กันกดซ้ำ)
 var txPresetAccount = null; // บัญชีที่ตั้งไว้ให้ตอนเปิดฟอร์มจากหน้าประวัติสินทรัพย์
 var txEdit = null;   // null = เพิ่มรายการใหม่, ไม่ใช่ null = กำลังแก้ไขรายการเดิม
 
@@ -2060,6 +2071,12 @@ function saveTransaction() {
     if (tx.account === tx.toAccount) { showToast('บัญชีต้นทางและปลายทางต้องไม่ซ้ำกัน'); return; }
   }
 
+  // กันกดบันทึกซ้ำ (แตะรัว ๆ ตอนเครื่องยังบันทึกไม่เสร็จ) จนได้รายการซ้ำหลายรอบ
+  if (txSaving) return;
+  txSaving = true;
+  $('saveTxBtn').disabled = true;
+  var release = function () { txSaving = false; $('saveTxBtn').disabled = false; };
+
   // เด้งไปเดือนของรายการที่เพิ่ง [บันทึก] เพื่อให้เห็นผลทันทีถ้าบันทึกย้อนเดือน
   var d = parseDateStr(tx.dateStr);
 
@@ -2075,7 +2092,7 @@ function saveTransaction() {
       txEdit = null;
       closeModal('txModal');
       showToast(isOnline() ? 'แก้ไขรายการแล้ว' : 'แก้ไขในเครื่องแล้ว จะซิงก์ให้เมื่อมีเน็ต');
-    });
+    }).then(release, release);
     return;
   }
 
@@ -2090,7 +2107,7 @@ function saveTransaction() {
     closeModal('txModal');
     var what = tx.type === 'transfer' ? 'โอนเงินแล้ว' : 'บันทึกรายการแล้ว';
     showToast(isOnline() ? what : 'บันทึกลงเครื่องแล้ว จะซิงก์ให้เมื่อมีเน็ต');
-  });
+  }).then(release, release);
 }
 
 function handleReceiptUpload(e) {
