@@ -710,3 +710,27 @@ html.no-mascot .brand-word{max-height:62px;}
 .hadd.income{background:var(--green);}
 .hadd.transfer{background:var(--transfer, #4a8fe7);}
 .hadd:active{transform:scale(.97);}
+
+/* ===== v22: รายการจ่ายเยอะที่สุด + กางดูรายการในหมวด ===== */
+.analysis-row.expandable{cursor:pointer;}
+.analysis-row.expandable::after{content:'›';color:var(--text-secondary);font-size:18px;margin-left:2px;transition:transform .2s;}
+.analysis-row.expandable.open::after{transform:rotate(90deg);}
+.cat-items{background:var(--bg-card-alt);border-radius:var(--radius-md);margin:4px 0 8px;overflow:hidden;}
+.analysis-top{margin-top:22px;}
+.top-title{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:16px;margin:0 4px 10px;}
+.top-count{font-size:12px;font-weight:500;color:var(--text-secondary);}
+.top-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid var(--border);cursor:pointer;}
+.top-row:last-child{border-bottom:none;}
+.top-row.pending{opacity:.6;}
+.top-rank{flex:none;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;background:var(--bg-card-alt);color:var(--text-secondary);}
+.top-rank.r1{background:#f7d36b;color:#5a4300;}
+.top-rank.r2{background:#d5d9e3;color:#3d4250;}
+.top-rank.r3{background:#e9b48a;color:#5a3216;}
+.top-row .tx-icon{flex:none;}
+.top-info{flex:1;min-width:0;}
+.top-note{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top-meta{font-size:12px;color:var(--text-secondary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top-amount{flex:none;font-weight:700;font-size:15px;}
+.top-amount.expense{color:var(--red);}
+.top-amount.income{color:var(--green);}

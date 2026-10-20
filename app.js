@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-19-pwa-21';
+var APP_VERSION = '2026-10-20-pwa-22';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1455,6 +1455,90 @@ function moveAssetLocalAndQueue(asset, group, direction) {
   }, 'ย้ายลำดับ ' + asset.name);
 }
 
+/** ดึงรายการทีละรายการของเดือน (ประเภทที่เลือก, หรือเฉพาะหมวด) เรียงจากมากไปน้อย */
+function monthItemsSorted(month, type, category) {
+  var out = [];
+  ((month && month.days) || []).forEach(function (day) {
+    (day.items || []).forEach(function (it) {
+      if (it.type !== type) return;
+      if (category && (it.category || 'ไม่ระบุหมวดหมู่') !== category) return;
+      out.push({ item: it, dateStr: day.key });
+    });
+  });
+  out.sort(function (a, b) { return (Number(b.item.amount) || 0) - (Number(a.item.amount) || 0); });
+  return out;
+}
+
+function shortThaiDate(str) {
+  var d = parseDateStr(str);
+  return THAI_DAYS_SHORT[d.getDay()] + ' ' + d.getDate() + ' ' + THAI_MONTHS_SHORT[d.getMonth()];
+}
+
+/** แถวรายการเดี่ยวในหน้าวิเคราะห์ (แตะเพื่อแก้ไข) */
+function analysisItemRow(entry, rank) {
+  var it = entry.item;
+  var row = document.createElement('div');
+  row.className = 'top-row' + (it.pending ? ' pending' : '');
+  var sign = it.type === 'income' ? '+' : '-';
+  row.innerHTML =
+    (rank ? '<span class="top-rank r' + rank + '">' + rank + '</span>' : '') +
+    '<div class="tx-icon">' + iconHtml(categoryIcon(it.type, it.category)) + '</div>' +
+    '<div class="top-info">' +
+    '  <div class="top-note">' + escapeHtml(it.note || it.category) + '</div>' +
+    '  <div class="top-meta">' + escapeHtml(shortThaiDate(entry.dateStr) + ' · ' +
+         (it.note ? it.category + ' · ' : '') + it.account) + '</div>' +
+    '</div>' +
+    '<div class="top-amount ' + it.type + '">' + sign + escapeHtml(formatBaht(it.amount)) + '</div>';
+  row.addEventListener('click', function () {
+    if (it.pending) { showToast('รายการนี้ยังรอซิงก์อยู่ แก้ไขได้หลังซิงก์ขึ้นชีตแล้ว'); return; }
+    openTxModal({ item: it, dateStr: entry.dateStr });
+  });
+  return row;
+}
+
+/** ส่วน "จ่ายเยอะที่สุด" ใต้รายการหมวดหมู่ */
+function renderTopItems(month, type) {
+  var host = $('analysisTop');
+  host.innerHTML = '';
+  var all = monthItemsSorted(month, type);
+  if (!all.length) { host.hidden = true; return; }
+  host.hidden = false;
+  var limit = state.topShowAll ? all.length : 10;
+  var title = document.createElement('div');
+  title.className = 'top-title';
+  title.innerHTML = '<span>🏆 ' + (type === 'income' ? 'รับเข้ามากที่สุด' : 'จ่ายเยอะที่สุด') + '</span>' +
+    '<span class="top-count">' + all.length + ' รายการ</span>';
+  host.appendChild(title);
+  var card = document.createElement('div');
+  card.className = 'tx-card';
+  all.slice(0, limit).forEach(function (e, i) { card.appendChild(analysisItemRow(e, i + 1)); });
+  host.appendChild(card);
+  if (all.length > 10) {
+    var more = document.createElement('button');
+    more.className = 'secondary-btn';
+    more.textContent = state.topShowAll ? 'ย่อเหลือ 10 อันดับ' : 'ดูทั้งหมด ' + all.length + ' รายการ';
+    more.addEventListener('click', function () { state.topShowAll = !state.topShowAll; renderAnalysis(); });
+    host.appendChild(more);
+  }
+}
+
+/** แตะแถวหมวดหมู่ = กาง/หุบ ดูรายการในหมวดนั้น เรียงจากมากไปน้อย */
+function attachCategoryExpand(row, month, type, name) {
+  row.classList.add('expandable');
+  var key = type + '|' + name;
+  var open = state.analysisOpenCat === key;
+  row.classList.toggle('open', open);
+  row.addEventListener('click', function () {
+    state.analysisOpenCat = (state.analysisOpenCat === key) ? null : key;
+    renderAnalysis();
+  });
+  if (!open) return null;
+  var box = document.createElement('div');
+  box.className = 'cat-items';
+  monthItemsSorted(month, type, name).forEach(function (e) { box.appendChild(analysisItemRow(e)); });
+  return box;
+}
+
 function renderAnalysis() {
   var month = currentMonth();
   var host = $('chartHost');
@@ -1479,7 +1563,7 @@ function renderAnalysis() {
       { label: 'ค่าใช้จ่าย', value: comb.totalExpense, color: 'var(--red)' }
     ]);
 
-    if (!comb.categories.length) { emptyEl.hidden = false; return; }
+    if (!comb.categories.length) { emptyEl.hidden = false; $('analysisTop').hidden = true; return; }
     emptyEl.hidden = true;
 
     comb.categories.forEach(function (c) {
@@ -1493,7 +1577,10 @@ function renderAnalysis() {
         '<span class="analysis-amount" style="color:' + color + '">' +
         sign + escapeHtml(formatBaht(c.amount)) + '</span>';
       listEl.appendChild(row);
+      var box = attachCategoryExpand(row, month, c.type, c.name);
+      if (box) listEl.appendChild(box);
     });
+    renderTopItems(month, 'expense');
     return;
   }
 
@@ -1502,7 +1589,7 @@ function renderAnalysis() {
   var valueColor = state.analysisType === 'income' ? 'var(--green)' : 'var(--red)';
   host.innerHTML = renderDonutSvg(data.categories, data.total, 'รวม', valueColor);
 
-  if (!data.categories.length) { emptyEl.hidden = false; return; }
+  if (!data.categories.length) { emptyEl.hidden = false; $('analysisTop').hidden = true; return; }
   emptyEl.hidden = true;
 
   data.categories.forEach(function (c) {
@@ -1514,7 +1601,10 @@ function renderAnalysis() {
       '<span class="analysis-percent">' + escapeHtml(String(c.percent)) + '%</span>' +
       '<span class="analysis-amount">' + escapeHtml(formatBaht(c.amount)) + '</span>';
     listEl.appendChild(row);
+    var box = attachCategoryExpand(row, month, state.analysisType, c.name);
+    if (box) listEl.appendChild(box);
   });
+  renderTopItems(month, state.analysisType);
 }
 
 // ===================== หน้าเพิ่มเติม: เมนูไอคอน =====================
