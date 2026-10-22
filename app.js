@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-20-pwa-22';
+var APP_VERSION = '2026-10-22-pwa-23';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1648,6 +1648,13 @@ function openMorePage(name) {
     $('hapticsToggle').checked = prefOn(HAPTICS_KEY);
     $('mascotToggle').checked = prefOn(MASCOT_KEY);
   }
+  scrollMainTop();
+}
+
+/** เลื่อนเนื้อหากลับขึ้นบนสุด (ตอนนี้เนื้อหาเลื่อนในกล่อง main ไม่ใช่ทั้งหน้า) */
+function scrollMainTop() {
+  var m = document.querySelector('#app main');
+  if (m) m.scrollTop = 0;
   window.scrollTo(0, 0);
 }
 
@@ -2518,6 +2525,7 @@ function moveGroupAndQueue(name, direction) {
 
 function switchTab(tab) {
   if (tab === 'more') state.morePage = null;   // แตะแท็บเพิ่มเติม = กลับมาที่เมนูเสมอ
+  if (state.tab !== tab) scrollMainTop();
   state.tab = tab;
   document.querySelectorAll('.nav-btn').forEach(function (b) {
     b.classList.toggle('active', b.dataset.tab === tab);

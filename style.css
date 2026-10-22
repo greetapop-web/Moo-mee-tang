@@ -734,3 +734,14 @@ html.no-mascot .brand-word{max-height:62px;}
 .top-amount{flex:none;font-weight:700;font-size:15px;}
 .top-amount.expense{color:var(--red);}
 .top-amount.income{color:var(--green);}
+
+/* ===== v23: หัวแอปและแถบเมนูล่างอยู่กับที่ เลื่อนเฉพาะเนื้อหาตรงกลาง =====
+   เดิมทั้งหน้าเลื่อน แล้ว iPhone (โหมดแอปบนหน้าจอโฮม) ลากแถบที่ fixed ไหลตามไปด้วยตอนเด้ง/เลื่อนเร็ว */
+html:has(#app:not([hidden])),
+html:has(#app:not([hidden])) body{height:100%;overflow:hidden;overscroll-behavior:none;}
+html:has(#app:not([hidden])) body{position:fixed;inset:0;width:100%;}
+#app:not([hidden]){display:flex;flex-direction:column;height:100%;min-height:0;}
+#app > .app-header{position:relative;top:auto;flex:none;}
+#app > main{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;padding-bottom:40px;}
+#app > .bottom-nav{position:relative;bottom:auto;left:auto;right:auto;flex:none;width:100%;max-width:none;margin:0;}
