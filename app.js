@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-23-pwa-24';
+var APP_VERSION = '2026-10-23-pwa-25';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -133,6 +133,38 @@ document.addEventListener('click', function (e) {
 document.addEventListener('change', function (e) {
   if (e.target && e.target.closest && e.target.closest('label.switch')) haptic();
 }, true);
+
+// ===================== กันแตะแล้วไปโดนปุ่มอื่น (บั๊ก iPhone หลังคีย์บอร์ดหุบ) =====================
+// เวลาพิมพ์หมายเหตุ iPhone จะเลื่อนทั้งหน้าขึ้นเพื่อให้เห็นช่องพิมพ์ พอคีย์บอร์ดหุบ บางครั้งไม่เลื่อนกลับ
+// ภาพบนจอดูปกติ แต่ตำแหน่งที่นิ้วแตะเพี้ยนไป → แตะดินสอ/แถบล่าง แต่ไปโดนรายการที่อยู่ด้านบนแทน
+// แก้: ถ้าไม่ได้พิมพ์อยู่ ให้ดึงหน้ากลับตำแหน่ง 0 เสมอ (เนื้อหาเลื่อนในกล่อง main อยู่แล้ว ทั้งหน้าไม่ควรเลื่อน)
+function isTyping() {
+  var a = document.activeElement;
+  if (!a || !a.matches) return false;
+  if (a.matches('textarea')) return true;
+  if (!a.matches('input:not([type]), input[type=text], input[type=number], input[type=search], input[type=email]')) return false;
+  return !a.readOnly && a.inputMode !== 'none';
+}
+function resetViewportScroll() {
+  var de = document.documentElement, b = document.body;
+  if (window.scrollX || window.scrollY || de.scrollTop || (b && b.scrollTop)) {
+    window.scrollTo(0, 0);
+    de.scrollTop = 0;
+    if (b) b.scrollTop = 0;
+  }
+}
+function settleViewport() { if (!isTyping()) resetViewportScroll(); }
+document.addEventListener('focusout', function () {
+  setTimeout(settleViewport, 50);
+  setTimeout(settleViewport, 350);   // รอคีย์บอร์ดหุบเสร็จอีกรอบ
+}, true);
+window.addEventListener('scroll', settleViewport, { passive: true });
+document.addEventListener('touchstart', settleViewport, { passive: true, capture: true });
+document.addEventListener('visibilitychange', settleViewport);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function () { setTimeout(settleViewport, 50); });
+  window.visualViewport.addEventListener('scroll', function () { setTimeout(settleViewport, 50); });
+}
 
 // ===================== คลังไอคอนหมวดหมู่ =====================
 // ใช้อิโมจิ (บน iPhone แสดงเป็นภาพสีสวยแบบ Apple) — ทำงานออฟไลน์ได้ และเก็บในชีตเป็นตัวอักษรธรรมดา
@@ -1892,6 +1924,10 @@ function openModal(id) {
 function closeModal(id) {
   var el = $(id);
   if (!el.classList.contains('open')) return;
+  // ปิดคีย์บอร์ดที่ค้างอยู่ แล้วดึงหน้ากลับที่เดิม (กันตำแหน่งแตะเพี้ยนหลังปิดหน้าบันทึก)
+  var act = document.activeElement;
+  if (act && el.contains(act) && act.blur) act.blur();
+  setTimeout(settleViewport, 60);
   el.classList.add('closing');
   clearTimeout(el._closeTimer);
   el._closeTimer = setTimeout(function () { el.classList.remove('open', 'closing'); }, 200);
