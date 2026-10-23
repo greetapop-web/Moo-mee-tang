@@ -745,3 +745,20 @@ html:has(#app:not([hidden])) body{position:fixed;inset:0;width:100%;}
 #app > main{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;padding-bottom:40px;}
 #app > .bottom-nav{position:relative;bottom:auto;left:auto;right:auto;flex:none;width:100%;max-width:none;margin:0;}
+
+/* ===== v24: ช่องหมายเหตุใหญ่ แยกจากช่องจำนวนเงิน + ปุ่มดินสอแตะง่ายขึ้น ===== */
+.tx-panel .amount-box{justify-content:center;}
+.note-box{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;
+  padding:0 12px;margin:0 0 8px;min-height:48px;cursor:text;}
+.note-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);}
+.note-ico{font-size:18px;flex:none;}
+/* 16px ขึ้นไป = iPhone ไม่ซูมหน้าจอตอนแตะ (เดิม 14px ทำให้จอซูม/กระตุก แล้วนิ้วไปโดนช่องตัวเลขแทน) */
+.modal .note-box input.tx-note{flex:1;min-width:0;background:none;border:none;padding:12px 0;font-size:16px;
+  color:var(--text-primary);border-radius:0;outline:none;}
+.modal .note-box input.tx-note::placeholder{color:var(--text-secondary);}
+/* ปุ่มดินสอ: ขยายพื้นที่แตะรอบปุ่ม ไม่ให้นิ้วที่แตะเฉียงไปโดนรายการเก่าข้างหลัง (แล้วเปิดเป็นหน้าแก้ไข) */
+.nav-add{position:relative;}
+.nav-add::before{content:"";position:absolute;inset:-18px -10px -6px;border-radius:40px;}
+.nav-add-slot{position:relative;}
+button,input,label,.tx-row,.asset-main,.cat-tile{touch-action:manipulation;}
+.modal label.note-box{display:flex;margin:0 0 8px;font-size:inherit;color:inherit;}

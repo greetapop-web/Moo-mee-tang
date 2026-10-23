@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-22-pwa-23';
+var APP_VERSION = '2026-10-23-pwa-24';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -2576,7 +2576,14 @@ function bindEvents() {
   on('forceSyncBtn', 'click', function () { fullSync({ notify: true }); });
   on('resetConnectionBtn', 'click', resetConnection);
 
-  on('fabAdd', 'click', function () { openTxModal(null); });
+  on('fabAdd', 'click', function (e) { e.stopPropagation(); openTxModal(null); });
+  // แตะพื้นที่ว่างรอบปุ่มดินสอในแถบล่าง = กดดินสอ
+  document.querySelector('.nav-add-slot').addEventListener('click', function (e) {
+    if (e.target.closest('#fabAdd')) return;
+    openTxModal(null);
+  });
+  // กด "เสร็จ" บนคีย์บอร์ดตอนพิมพ์หมายเหตุ = ปิดคีย์บอร์ด (ไม่บันทึกทันที กันเผลอ)
+  on('txNote', 'keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
   on('deleteTxBtn', 'click', function () {
     if (!txEdit) return;
     confirmDeleteTx(txEdit.item).then(function (done) {

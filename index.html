@@ -251,11 +251,14 @@
           <span id="txAccountLabel" class="sr-only">บัญชี/สินทรัพย์</span>
           <select id="txAccount" class="sr-select" aria-label="บัญชี" tabindex="-1"></select>
           <div class="amount-box">
-            <input type="text" id="txNote" class="tx-note" placeholder="หมายเหตุ..." autocomplete="off">
             <input type="text" id="txAmount" inputmode="none" autocomplete="off" placeholder="0">
             <span id="calcPreview" class="calc-preview"></span>
           </div>
         </div>
+        <label class="note-box" for="txNote">
+          <span class="note-ico" aria-hidden="true">📝</span>
+          <input type="text" id="txNote" class="tx-note" placeholder="หมายเหตุ เช่น ซื้ออะไร ที่ไหน" autocomplete="off" enterkeyhint="done">
+        </label>
         <input type="hidden" id="txDate">
         <div id="calcPad" class="calc-pad">
           <button type="button" id="txDateBtn" class="k-date">📅</button>
