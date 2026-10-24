@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-23-pwa-25';
+var APP_VERSION = '2026-10-24-pwa-26';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -561,6 +561,7 @@ function applyBootstrap(data) {
 
       (data.months || []).forEach(function (m) {
         var key = monthKey(m.year, m.monthIndex);
+        normalizeMonthNotes(m);
         state.months[key] = m;
         writes.push(monthSet(key, m));
       });
@@ -589,6 +590,7 @@ function fetchMonth(year, monthIndex) {
   return apiGet('getMonthData', { year: year, monthIndex: monthIndex })
     .then(function (data) {
       var key = monthKey(year, monthIndex);
+      normalizeMonthNotes(data);
       state.months[key] = data;
       return monthSet(key, data).then(function () { return data; });
     });
@@ -822,7 +824,7 @@ function addTransactionLocal(tx) {
     account: tx.account,
     toAccount: tx.type === 'transfer' ? tx.toAccount : '',
     amount: Number(tx.amount) || 0,
-    note: tx.note || ''
+    note: cleanNote(tx.note)
   });
 
   recomputeMonthTotals(month);
@@ -1265,6 +1267,36 @@ function shiftDatePicker(delta) {
 }
 
 /** ข้อมูลยืนยันตัวรายการ: เวลาบันทึก + ค่าเดิม — เซิร์ฟเวอร์ใช้หาแถวให้ถูกแม้แถวจะขยับไปแล้ว */
+// ===================== หมายเหตุ: กัน Google Sheets แปลงเป็นวันที่/ตัวเลขเอง =====================
+// เช่น พิมพ์ "7/11" (เซเว่น) ชีตจะเข้าใจว่าเป็นวันที่ 7 พ.ย. แล้วแอปอ่านกลับมาเป็น 2026-11-07
+// ตอนส่งขึ้นชีต: ใส่ ' นำหน้าให้ชีตเก็บเป็นข้อความตรงตัว (เครื่องหมาย ' จะไม่แสดงในชีต)
+function noteForSheet(note) {
+  note = String(note || '');
+  if (!note) return '';
+  if (/^[\s\d\/\-\.:,+=%฿$()]+$/.test(note) || /^[=+\-@]/.test(note) || /^(true|false)$/i.test(note.trim())) return "'" + note;
+  return note;
+}
+// หมายเหตุเก่าที่ชีตแปลงเป็นวันที่ไปแล้ว (อ่านกลับมาเป็น yyyy-mm-dd) → แสดงกลับเป็น วัน/เดือน เช่น 7/11
+function cleanNote(note) {
+  note = String(note || '');
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(note);
+  if (m) return Number(m[3]) + '/' + Number(m[2]);
+  if (note.charAt(0) === "'") return note.slice(1);
+  return note;
+}
+function normalizeMonthNotes(month) {
+  ((month && month.days) || []).forEach(function (d) {
+    (d.items || []).forEach(function (it) { if (it.note) it.note = cleanNote(it.note); });
+  });
+  return month;
+}
+function txForSheet(tx) {
+  var c = {};
+  Object.keys(tx).forEach(function (k) { c[k] = tx[k]; });
+  c.note = noteForSheet(tx.note);
+  return c;
+}
+
 function expectedOf(item) {
   return { key: item.key || '', type: item.type, category: item.category, amount: item.amount };
 }
@@ -2218,7 +2250,7 @@ function saveTransaction() {
     saveLastTx(tx);
     state.year = d.getFullYear();
     state.monthIndex = d.getMonth();
-    performWrite('updateTransaction', [ed.sheetName, ed.item.rowIndex, expectedOf(ed.item), tx], function () {
+    performWrite('updateTransaction', [ed.sheetName, ed.item.rowIndex, expectedOf(ed.item), txForSheet(tx)], function () {
       deleteTransactionLocal(ed.monthKey, ed.item.rowIndex);
       addTransactionLocal(tx);
     }, 'แก้ไข ' + ed.item.category).then(function () {
@@ -2234,7 +2266,7 @@ function saveTransaction() {
   saveLastTx(tx);
   if (homeView() === 'calendar') state.selectedDay = tx.dateStr;
 
-  performWrite('addTransaction', [tx], function () { addTransactionLocal(tx); },
+  performWrite('addTransaction', [txForSheet(tx)], function () { addTransactionLocal(tx); },
     tx.type === 'transfer' ? 'โอน ' + tx.account + ' → ' + tx.toAccount : 'บันทึก ' + tx.category
   ).then(function () {
     closeModal('txModal');
@@ -2808,7 +2840,7 @@ function loadFromLocal() {
     if (res[0]) state.categories = res[0];
     if (res[1]) state.assetsOverview = res[1];
     if (res[2]) state.lastSync = res[2];
-    (res[3] || []).forEach(function (row) { state.months[row.key] = row.value; });
+    (res[3] || []).forEach(function (row) { state.months[row.key] = normalizeMonthNotes(row.value); });
   });
 }
 
