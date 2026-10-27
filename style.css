@@ -777,3 +777,11 @@ button,input,label,.tx-row,.asset-main,.cat-tile{touch-action:manipulation;}
   margin:0 -20px;padding:0 20px calc(24px + env(safe-area-inset-bottom));}
 #historyList .day-group{margin-bottom:10px;}
 .modal.history-sheet{padding:20px 20px 0;}
+
+/* ===== v28: กล่องคัดลอกลิงก์/โทเค็น ===== */
+.conn-box{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-top:14px;}
+.conn-title{font-weight:700;margin-bottom:8px;}
+.conn-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--text-secondary);padding:4px 0;}
+.conn-row code{color:var(--text-primary);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.conn-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.conn-btns .secondary-btn{margin-top:10px;}

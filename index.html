@@ -169,6 +169,16 @@
           <h2 class="page-title"><img class="title-pig mascot" src="img/pig-peek.png" alt="">ซิงก์ข้อมูล</h2>
         <div id="syncDetail" class="about-text"></div>
         <button class="secondary-btn" id="forceSyncBtn">ซิงก์ข้อมูลกับ Google Sheet เดี๋ยวนี้</button>
+        <div class="conn-box">
+          <div class="conn-title">🔗 เชื่อมกับแอปอื่น (เช่น ตังค์กัน)</div>
+          <div class="conn-row"><span>ลิงก์</span><code id="connUrlView">—</code></div>
+          <div class="conn-row"><span>โทเค็น</span><code id="connTokenView">—</code></div>
+          <div class="conn-btns">
+            <button type="button" class="secondary-btn" id="copyConnUrlBtn">📋 คัดลอกลิงก์</button>
+            <button type="button" class="secondary-btn" id="copyConnTokenBtn">📋 คัดลอกโทเค็น</button>
+          </div>
+          <p class="about-text">คัดลอกแล้วไปวางในหน้าตั้งค่าของอีกแอปได้เลย อย่าส่งโทเค็นให้คนอื่น เพราะใครมีโทเค็นก็แก้ข้อมูลการเงินได้</p>
+        </div>
         <button class="danger-btn" id="resetConnectionBtn">ตัดการเชื่อมต่อ / ใส่โทเค็นใหม่</button>
         <p class="about-text">ใช้เมื่อเปลี่ยนโทเค็นด้วย resetApiToken() หรือจะเชื่อมกับชีตอื่น ข้อมูลที่เก็บไว้ในเครื่องนี้จะถูกล้าง (ข้อมูลในชีตไม่หาย)</p>
 

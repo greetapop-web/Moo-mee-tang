@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-27-pwa-27';
+var APP_VERSION = '2026-10-27-pwa-28';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1710,6 +1710,7 @@ function openMorePage(name) {
   $('moreMenu').hidden = !!name;
   $('moreHello').hidden = !!name;
   document.querySelectorAll('.more-page').forEach(function (p) { p.hidden = p.dataset.page !== name; });
+  if (name === 'sync') renderConnInfo();
   if (name === 'settings') {
     $('hapticsToggle').checked = prefOn(HAPTICS_KEY);
     $('mascotToggle').checked = prefOn(MASCOT_KEY);
@@ -2645,6 +2646,8 @@ function bindEvents() {
   on('syncBtn', 'click', function () { fullSync({ notify: true }); });
   on('forceSyncBtn', 'click', function () { fullSync({ notify: true }); });
   on('resetConnectionBtn', 'click', resetConnection);
+  on('copyConnUrlBtn', 'click', function () { var c = loadConnection(); if (c) copyText(c.url, 'ลิงก์'); });
+  on('copyConnTokenBtn', 'click', function () { var c = loadConnection(); if (c) copyText(c.token, 'โทเค็น'); });
 
   on('fabAdd', 'click', function (e) { e.stopPropagation(); openTxModal(null); });
   // แตะพื้นที่ว่างรอบปุ่มดินสอในแถบล่าง = กดดินสอ
@@ -2889,6 +2892,28 @@ function showSetupScreen() {
         msg.classList.add('error');
       });
   });
+}
+
+/** แสดง/คัดลอก ลิงก์และโทเค็นของเครื่องนี้ ไว้ไปตั้งค่าแอปอื่นที่จะเชื่อมกับหมูมีตัง */
+function renderConnInfo() {
+  var c = loadConnection();
+  if (!$('connUrlView')) return;
+  $('connUrlView').textContent = c ? c.url.replace(/^https:\/\/script\.google\.com\/macros\/s\/(.{6}).*(.{6}\/exec)$/, '…/s/$1…$2') : '—';
+  $('connTokenView').textContent = c ? c.token.slice(0, 4) + '••••••••' + c.token.slice(-4) : '—';
+}
+function copyText(text, label) {
+  var done = function () { showToast('คัดลอก' + label + 'แล้ว'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text) ? done() : showToast('คัดลอกไม่ได้'); });
+  } else if (fallbackCopy(text)) done(); else showToast('คัดลอกไม่ได้');
+}
+function fallbackCopy(text) {
+  var t = document.createElement('textarea');
+  t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+  document.body.appendChild(t); t.select(); t.setSelectionRange(0, text.length);
+  var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(t);
+  return ok;
 }
 
 /** ล้างการเชื่อมต่อ + ข้อมูลในเครื่อง แล้วกลับไปหน้าเชื่อมต่อ (ข้อมูลในชีตไม่กระทบ) */
