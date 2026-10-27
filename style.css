@@ -762,3 +762,18 @@ html:has(#app:not([hidden])) body{position:fixed;inset:0;width:100%;}
 .nav-add-slot{position:relative;}
 button,input,label,.tx-row,.asset-main,.cat-tile{touch-action:manipulation;}
 .modal label.note-box{display:flex;margin:0 0 8px;font-size:inherit;color:inherit;}
+
+/* ===== v27: หน้าประวัติสินทรัพย์แบบเต็มจอ — ส่วนหัว/สรุปอยู่กับที่ รายการทั้งเดือนเลื่อนดูในกล่องของตัวเอง ===== */
+.modal.history-sheet{height:calc(100vh - env(safe-area-inset-top) - 8px);height:calc(100dvh - env(safe-area-inset-top) - 8px);
+  max-height:none;display:flex;flex-direction:column;overflow:hidden;padding-bottom:0;}
+.history-sheet > *{flex:none;}
+.history-sheet .modal-header{margin-bottom:6px;}
+.history-month{margin:0 0 8px;}
+.history-summary{margin-bottom:10px;}
+.history-summary>div{padding:8px 6px;}
+.history-add{margin:0 0 10px;}
+.hadd{padding:10px 6px;}
+.history-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  margin:0 -20px;padding:0 20px calc(24px + env(safe-area-inset-bottom));}
+#historyList .day-group{margin-bottom:10px;}
+.modal.history-sheet{padding:20px 20px 0;}

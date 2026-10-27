@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-24-pwa-26';
+var APP_VERSION = '2026-10-27-pwa-27';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1383,6 +1383,7 @@ function openAssetHistory(name) {
   state.historyYear = state.year;
   state.historyMonth = state.monthIndex;
   renderAssetHistory();
+  $('historyScroll').scrollTop = 0;
   openModal('assetHistoryModal');
   ensureHistoryMonthLoaded();
 }
@@ -1393,6 +1394,7 @@ function shiftHistoryMonth(delta) {
   if (m > 11) { m = 0; y++; }
   state.historyMonth = m; state.historyYear = y;
   renderAssetHistory();
+  $('historyScroll').scrollTop = 0;
   ensureHistoryMonthLoaded();
 }
 
