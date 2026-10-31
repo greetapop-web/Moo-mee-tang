@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-31-pwa-30';
+var APP_VERSION = '2026-10-31-pwa-31';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1016,7 +1016,52 @@ function renderCurrentTab() {
   else if (state.tab === 'more') renderMore();
 }
 
+// ===================== หน้าหลัก: เงินที่เหลือในกระเป๋าแต่ละใบ =====================
+// เงินซื้อความสุข = ผลรวมของบัญชีเหล่านี้ (ชื่อต้องตรงกับชื่อสินทรัพย์ในแอป)
+var HAPPY_ACCOUNTS = ['เงินสด', 'กรุงไทย', 'กสิกรไทย', 'True money'];
+var HOME_WALLETS = ['เงินซื้อข้าว', 'เงินซื้อของ'];
+
+function findAssetByNameLoose(name) {
+  var key = String(name).trim().toLowerCase();
+  var hit = null;
+  allAssetsFlat().forEach(function (a) { if (!hit && String(a.name).trim().toLowerCase() === key) hit = a; });
+  return hit;
+}
+
+function renderHomeWallets() {
+  var parts = [], total = 0;
+  HAPPY_ACCOUNTS.forEach(function (n) {
+    var a = findAssetByNameLoose(n);
+    if (!a) return;
+    total += Number(a.balance) || 0;
+    parts.push(a);
+  });
+  var tEl = $('happyTotal');
+  tEl.textContent = formatBaht(total);
+  tEl.classList.toggle('neg', total < 0);
+  $('happyParts').innerHTML = parts.map(function (a) {
+    var b = Number(a.balance) || 0;
+    return '<button type="button" class="happy-chip" data-asset="' + escapeHtml(a.name) + '">' +
+      '<span class="hc-ico">' + iconHtml(assetIcon(a)) + '</span>' +
+      '<span class="hc-text"><span class="hc-name">' + escapeHtml(a.name) + '</span>' +
+      '<b class="' + (b < 0 ? 'neg' : '') + '">' + escapeHtml(formatBaht(b)) + '</b></span></button>';
+  }).join('');
+  $('walletPair').innerHTML = HOME_WALLETS.map(function (n) {
+    var a = findAssetByNameLoose(n);
+    if (!a) return '';
+    var b = Number(a.balance) || 0;
+    return '<button type="button" class="wallet-card" data-asset="' + escapeHtml(a.name) + '">' +
+      '<span class="wc-ico">' + iconHtml(assetIcon(a)) + '</span>' +
+      '<span class="wc-text"><span class="wc-name">' + escapeHtml(a.name) + '</span>' +
+      '<b class="' + (b < 0 ? 'neg' : '') + '">' + escapeHtml(formatBaht(b)) + '</b></span></button>';
+  }).join('');
+  document.querySelectorAll('#happyParts [data-asset], #walletPair [data-asset]').forEach(function (el) {
+    el.addEventListener('click', function () { openAssetHistory(el.dataset.asset); });
+  });
+}
+
 function renderHome() {
+  renderHomeWallets();
   var month = currentMonth();
   var balance = month ? month.balance : 0;
   var balanceEl = $('homeBalance');
