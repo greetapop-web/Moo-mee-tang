@@ -785,3 +785,8 @@ button,input,label,.tx-row,.asset-main,.cat-tile{touch-action:manipulation;}
 .conn-row code{color:var(--text-primary);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .conn-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .conn-btns .secondary-btn{margin-top:10px;}
+
+/* ===== v29: แถบเมนูล่างชิดขอบจอมากขึ้น =====
+   เดิมกล่องแอปสูงไม่ถึงขอบล่างจริงของ iPhone (เหลือแถบดำ) + แถบเมนูยังเว้นที่ให้ขีด Home เต็ม ๆ อีกชั้น */
+#app:not([hidden]){position:fixed;top:0;left:0;right:0;bottom:0;height:auto;max-width:480px;margin:0 auto;}
+#app > .bottom-nav{padding:6px 0 max(6px, calc(env(safe-area-inset-bottom) - 14px));}
