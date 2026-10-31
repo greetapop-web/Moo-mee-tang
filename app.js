@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-31-pwa-29';
+var APP_VERSION = '2026-10-31-pwa-30';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1228,7 +1228,7 @@ var datePicker = { year: 0, monthIndex: 0 };
 function setTxDate(str) {
   $('txDate').value = str;
   var d = parseDateStr(str);
-  $('txDateBtn').textContent = str === todayStr() ? '📅 วันนี้' : '📅 ' + THAI_DAYS_SHORT[d.getDay()] + ' ' + d.getDate() + ' ' + THAI_MONTHS_SHORT[d.getMonth()];
+  $('txDateBtn').textContent = str === todayStr() ? '📅 วันนี้' : '📅 ' + d.getDate() + ' ' + THAI_MONTHS_SHORT[d.getMonth()];
   $('txDateBtn').title = thaiDateLabel(str);
   $('txDatePicker').hidden = true;
   $('txDateBtn').classList.remove('open');

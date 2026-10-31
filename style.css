@@ -790,3 +790,10 @@ button,input,label,.tx-row,.asset-main,.cat-tile{touch-action:manipulation;}
    เดิมกล่องแอปสูงไม่ถึงขอบล่างจริงของ iPhone (เหลือแถบดำ) + แถบเมนูยังเว้นที่ให้ขีด Home เต็ม ๆ อีกชั้น */
 #app:not([hidden]){position:fixed;top:0;left:0;right:0;bottom:0;height:auto;max-width:480px;margin:0 auto;}
 #app > .bottom-nav{padding:6px 0 max(6px, calc(env(safe-area-inset-bottom) - 14px));}
+
+/* ===== v30: ปุ่ม = คำนวณก่อนบันทึก (แถวบน: วันที่ | กล้อง | = | บันทึก) ===== */
+.calc-pad .k-date{grid-column:span 1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;}
+.calc-pad .k-eq{font-size:26px;font-weight:800;color:var(--accent);}
+#txModal.type-expense .calc-pad .k-eq{color:var(--red);}
+#txModal.type-income .calc-pad .k-eq{color:var(--green);}
+#txModal.type-transfer .calc-pad .k-eq{color:var(--transfer);}
