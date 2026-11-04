@@ -60,6 +60,15 @@
       '<path d="M32 10 C17 10 8 19 8 30 C8 38 13 44 20 47 L16 56 L28 49 C29 49 31 50 32 50 C47 50 56 41 56 30 C56 19 47 10 32 10 Z" fill="#f7d36b" ' + O + '/>' +
       '<ellipse cx="32" cy="30" rx="18" ry="14" fill="#8ec5ef" ' + O + '/>' +
       '<circle cx="32" cy="22.5" r="2.4" fill="#ffffff" ' + O + '/><path d="M32 28 V39" ' + O + ' stroke="#ffffff" stroke-width="4"/>'),
+    // ล่วงหน้า: ปฏิทิน + นาฬิกา
+    schedule: svg(
+      '<rect x="8" y="12" width="40" height="38" rx="5" fill="#fff8ec" ' + O + '/>' +
+      '<path d="M8 22 H48" ' + O + ' fill="none"/><rect x="8" y="12" width="40" height="10" rx="5" fill="#f4a3b5" ' + O + '/>' +
+      '<path d="M18 8 V16 M38 8 V16" ' + O + ' fill="none"/>' +
+      '<rect x="15" y="28" width="6" height="5" rx="1" fill="#c9cde6"/><rect x="25" y="28" width="6" height="5" rx="1" fill="#c9cde6"/>' +
+      '<rect x="15" y="37" width="6" height="5" rx="1" fill="#c9cde6"/>' +
+      '<circle cx="44" cy="44" r="13" fill="#f7d36b" ' + O + '/>' +
+      '<path d="M44 37 V44 L49 47" fill="none" ' + O + '/>'),
     // ดินสอ (ปุ่มจดบันทึก)
     pencil: svg(
       '<g transform="rotate(45 32 32)">' +

@@ -166,6 +166,14 @@
             <label class="switch"><input type="checkbox" id="mascotToggle"><span class="switch-slider"></span></label>
           </div>
         </div>
+        <div class="more-page" data-page="scheduled" hidden>
+          <button class="back-btn" data-back="1">‹ เพิ่มเติม</button>
+          <h2 class="page-title"><img class="title-pig mascot" src="img/pig-peek.png" alt="">รายการล่วงหน้า</h2>
+          <p class="about-text">ถึงวันแล้วระบบจะบันทึกให้อัตโนมัติ ยอดในบัญชีเปลี่ยนเอง — ตั้งรายการใหม่ได้จากปุ่มดินสอ แล้วเลือกวันที่ล่วงหน้า หรือแตะ "ทำซ้ำ"</p>
+          <button class="secondary-btn" id="addScheduledBtn">＋ ตั้งรายการล่วงหน้าใหม่</button>
+          <div id="schedList" class="sched-list"></div>
+          <p id="schedEmpty" class="empty-state" hidden>ยังไม่มีรายการล่วงหน้า</p>
+        </div>
         <div class="more-page" data-page="sync" hidden>
           <button class="back-btn" data-back="1">‹ เพิ่มเติม</button>
           <h2 class="page-title"><img class="title-pig mascot" src="img/pig-peek.png" alt="">ซิงก์ข้อมูล</h2>
@@ -271,6 +279,15 @@
           <span class="note-ico" aria-hidden="true">📝</span>
           <input type="text" id="txNote" class="tx-note" placeholder="หมายเหตุ เช่น ซื้ออะไร ที่ไหน" autocomplete="off" enterkeyhint="done">
         </label>
+        <div class="repeat-row" id="txRepeatRow">
+          <span class="repeat-label">🔁 ทำซ้ำ</span>
+          <div class="repeat-seg" id="txRepeatSeg">
+            <button type="button" data-rep="once" class="active">ไม่ทำซ้ำ</button>
+            <button type="button" data-rep="weekly">ทุกสัปดาห์</button>
+            <button type="button" data-rep="monthly">ทุกเดือน</button>
+          </div>
+        </div>
+        <div id="txScheduleHint" class="sched-hint" hidden></div>
         <input type="hidden" id="txDate">
         <div id="calcPad" class="calc-pad">
           <button type="button" id="txDateBtn" class="k-date">📅</button>
@@ -360,6 +377,35 @@
       <button id="moveGroupBtn" class="secondary-btn" style="margin-top:10px;">ย้ายกลุ่ม</button>
 
       <button id="deleteAssetBtn" class="danger-btn">ลบสินทรัพย์นี้</button>
+    </div>
+  </div>
+
+  <!-- Modal: แก้ไขรายการล่วงหน้า -->
+  <div id="schedModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="schedModalTitle">รายการล่วงหน้า</h3>
+        <button id="closeSchedModalBtn" class="icon-btn" aria-label="ปิด">✕</button>
+      </div>
+      <div id="schedSummary" class="sched-summary"></div>
+      <label for="schedAmount">จำนวนเงิน</label>
+      <input type="text" id="schedAmount" inputmode="decimal" autocomplete="off">
+      <label for="schedNote">หมายเหตุ</label>
+      <input type="text" id="schedNote" autocomplete="off">
+      <label>ทำซ้ำ</label>
+      <div class="repeat-seg wide" id="schedRepeatSeg">
+        <button type="button" data-rep="once">ครั้งเดียว</button>
+        <button type="button" data-rep="weekly">ทุกสัปดาห์</button>
+        <button type="button" data-rep="monthly">ทุกเดือน</button>
+      </div>
+      <label for="schedDate">บันทึกครั้งถัดไปวันที่</label>
+      <input type="date" id="schedDate">
+      <div class="setting-row">
+        <div><b>เปิดใช้งาน</b><div class="setting-sub">ปิดไว้ = พักไว้ก่อน ไม่บันทึกจนกว่าจะเปิด</div></div>
+        <label class="switch"><input type="checkbox" id="schedActive"><span class="switch-slider"></span></label>
+      </div>
+      <button class="primary-btn" id="saveSchedBtn">บันทึกการแก้ไข</button>
+      <button class="danger-btn" id="deleteSchedBtn">ลบรายการล่วงหน้านี้</button>
     </div>
   </div>
 

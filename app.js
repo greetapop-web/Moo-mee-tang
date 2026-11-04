@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-10-31-pwa-31';
+var APP_VERSION = '2026-11-04-pwa-32';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -394,6 +394,11 @@ function formatBaht(amount) {
   return (neg ? '-' : '') + '฿' + str;
 }
 
+function toDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+var THAI_DAYS_FULL = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+
 function todayStr() {
   var d = new Date();
   return d.getFullYear() + '-' +
@@ -552,8 +557,13 @@ function applyBootstrap(data) {
     .then(function (data) {
       state.categories = data.categories || { income: [], expense: [] };
       state.assetsOverview = data.assetsOverview || { total: 0, groups: [] };
+      if (data.scheduled) state.scheduled = data.scheduled;
+      if (data.scheduledRecorded) {
+        setTimeout(function () { showToast('⏰ บันทึกรายการล่วงหน้าให้แล้ว ' + data.scheduledRecorded + ' รายการ'); }, 400);
+      }
 
       var writes = [
+        kvSet('scheduled', state.scheduled || []),
         kvSet('categories', state.categories),
         kvSet('assetsOverview', state.assetsOverview),
         kvSet('availableMonths', data.availableMonths || [])
@@ -579,6 +589,7 @@ function applyBootstrap(data) {
         var replayed = 0;
         items.forEach(function (it) {
           if (it.action === 'addTransaction' && it.args && it.args[0]) { addTransactionLocal(it.args[0]); replayed++; }
+          if (/Scheduled$/.test(it.action)) { applyScheduledLocal(it.action, it.args || []); replayed++; }
         });
         if (replayed) return persistLocalState();
       });
@@ -723,7 +734,8 @@ function performWrite(action, args, localMutation, label) {
 function persistLocalState() {
   var writes = [
     kvSet('categories', state.categories),
-    kvSet('assetsOverview', state.assetsOverview)
+    kvSet('assetsOverview', state.assetsOverview),
+    kvSet('scheduled', state.scheduled || [])
   ];
   Object.keys(state.months).forEach(function (k) {
     writes.push(monthSet(k, state.months[k]));
@@ -1016,6 +1028,130 @@ function renderCurrentTab() {
   else if (state.tab === 'more') renderMore();
 }
 
+// ===================== รายการล่วงหน้า (ตั้งจ่าย/รับ/โอน ไว้ก่อน) =====================
+var REPEAT_LABEL = { once: 'ครั้งเดียว', weekly: 'ทุกสัปดาห์', monthly: 'ทุกเดือน' };
+
+function scheduleNextAfter(dateStr, repeat, anchorDay) {
+  var d = parseDateStr(dateStr);
+  if (repeat === 'weekly') { d.setDate(d.getDate() + 7); return toDateStr(d); }
+  if (repeat === 'monthly') {
+    var y = d.getFullYear(), m = d.getMonth() + 1;
+    if (m > 11) { m = 0; y++; }
+    var dim = new Date(y, m + 1, 0).getDate();
+    return toDateStr(new Date(y, m, Math.min(anchorDay || d.getDate(), dim)));
+  }
+  return '';
+}
+
+function setRepeatSeg(id, rep) {
+  document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.toggle('active', b.dataset.rep === rep); });
+}
+
+/** ข้อความใต้ช่องทำซ้ำ บอกว่าจะเกิดอะไรขึ้นเมื่อกดบันทึก */
+function updateScheduleHint() {
+  var el = $('txScheduleHint');
+  if (!el) return;
+  if (txEdit) { el.hidden = true; return; }
+  var rep = state.txRepeat || 'once';
+  var ds = $('txDate').value || todayStr();
+  var d = parseDateStr(ds);
+  var future = ds > todayStr();
+  var when = rep === 'weekly' ? 'ทุกวัน' + THAI_DAYS_FULL[d.getDay()]
+    : rep === 'monthly' ? 'ทุกเดือน วันที่ ' + d.getDate() : '';
+  var msg = '';
+  if (rep === 'once' && future) msg = '⏰ จะบันทึกให้อัตโนมัติวันที่ ' + thaiDateLabel(ds);
+  else if (rep !== 'once' && future) msg = '🔁 บันทึก' + when + ' เริ่ม ' + thaiDateLabel(ds);
+  else if (rep !== 'once') msg = '🔁 บันทึกวันนี้ แล้วทำซ้ำ' + when + ' (รอบถัดไป ' + thaiDateLabel(scheduleNextAfter(ds, rep, d.getDate())) + ')';
+  el.hidden = !msg;
+  el.textContent = msg;
+  $('saveTxBtn').textContent = (rep !== 'once' || future) ? 'ตั้งไว้' : 'บันทึก';
+}
+
+/** แก้ state.scheduled ในเครื่องให้ตรงกับที่เซิร์ฟเวอร์จะทำ */
+function applyScheduledLocal(action, args) {
+  var list = state.scheduled = state.scheduled || [];
+  var idx = function (id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return i; return -1; };
+  if (action === 'addScheduled') {
+    var s = args[0];
+    if (s && idx(s.id) < 0) list.push(Object.assign({ pending: true }, s));
+  } else if (action === 'updateScheduled') {
+    var i = idx(args[0]);
+    if (i >= 0) Object.assign(list[i], args[1] || {}, { pending: true });
+  } else if (action === 'deleteScheduled') {
+    var j = idx(args[0]);
+    if (j >= 0) list.splice(j, 1);
+  }
+}
+
+function scheduleSortKey(s) { return (s.active ? '0' : '1') + (s.nextDate || '9999'); }
+
+function renderScheduledList() {
+  var host = $('schedList');
+  if (!host) return;
+  var list = (state.scheduled || []).filter(function (s) { return s.active || s.repeat !== 'once'; })
+    .slice().sort(function (a, b) { return scheduleSortKey(a) < scheduleSortKey(b) ? -1 : 1; });
+  $('schedEmpty').hidden = list.length > 0;
+  host.innerHTML = '';
+  list.forEach(function (s) {
+    var isTransfer = s.type === 'transfer';
+    var row = document.createElement('div');
+    row.className = 'sched-row' + (s.active ? '' : ' paused') + (s.pending ? ' pending' : '');
+    var sign = s.type === 'income' ? '+' : (isTransfer ? '' : '-');
+    row.innerHTML =
+      '<div class="tx-icon">' + iconHtml(isTransfer ? '🔁' : categoryIcon(s.type, s.category)) + '</div>' +
+      '<div class="tx-info">' +
+      '  <div class="tx-cat ' + (isTransfer ? 'transfer' : s.type) + '">' + escapeHtml(isTransfer ? 'โอนเงิน' : s.category) + '</div>' +
+      '  <div class="tx-account">' + escapeHtml(isTransfer ? s.account + ' → ' + s.toAccount : s.account) + (s.note ? ' · ' + escapeHtml(s.note) : '') + '</div>' +
+      '  <div class="sched-when">' + (s.active
+          ? '⏰ ' + escapeHtml(thaiDateLabel(s.nextDate)) + ' · ' + REPEAT_LABEL[s.repeat]
+          : '⏸ พักไว้ · ' + REPEAT_LABEL[s.repeat]) + (s.pending ? ' · รอซิงก์' : '') + '</div>' +
+      '</div>' +
+      '<div class="tx-amount ' + (isTransfer ? 'transfer' : s.type) + '">' + sign + escapeHtml(formatBaht(s.amount)) + '</div>';
+    row.addEventListener('click', function () { openSchedModal(s.id); });
+    host.appendChild(row);
+  });
+}
+
+var schedEditId = null;
+function openSchedModal(id) {
+  var s = (state.scheduled || []).filter(function (x) { return x.id === id; })[0];
+  if (!s) return;
+  schedEditId = id;
+  var isTransfer = s.type === 'transfer';
+  $('schedSummary').innerHTML = '<span class="tx-cat ' + (isTransfer ? 'transfer' : s.type) + '">' +
+    escapeHtml(isTransfer ? 'โอนเงิน' : s.category) + '</span> ' +
+    escapeHtml(isTransfer ? s.account + ' → ' + s.toAccount : s.account);
+  $('schedAmount').value = s.amount;
+  $('schedNote').value = s.note || '';
+  $('schedDate').value = s.nextDate || todayStr();
+  $('schedActive').checked = !!s.active;
+  setRepeatSeg('schedRepeatSeg', s.repeat);
+  openModal('schedModal');
+}
+
+function saveSchedModal() {
+  var id = schedEditId;
+  var amount = Number(String($('schedAmount').value).replace(/,/g, ''));
+  if (!(amount > 0)) { showToast('จำนวนเงินต้องมากกว่า 0'); return; }
+  var date = $('schedDate').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { showToast('เลือกวันที่ก่อน'); return; }
+  var repBtn = document.querySelector('#schedRepeatSeg button.active');
+  var patch = { amount: amount, note: $('schedNote').value, nextDate: date,
+    repeat: repBtn ? repBtn.dataset.rep : 'once', active: $('schedActive').checked };
+  if (patch.active && date < todayStr()) {
+    showToast('วันที่ผ่านไปแล้ว ระบบจะบันทึกย้อนให้ตอนซิงก์');
+  }
+  performWrite('updateScheduled', [id, patch], function () { applyScheduledLocal('updateScheduled', [id, patch]); }, 'แก้รายการล่วงหน้า')
+    .then(function () { closeModal('schedModal'); renderScheduledList(); showToast('บันทึกการแก้ไขแล้ว'); });
+}
+
+function deleteSchedModal() {
+  var id = schedEditId;
+  if (!confirm('ลบรายการล่วงหน้านี้? (รายการที่บันทึกไปแล้วไม่หาย)')) return;
+  performWrite('deleteScheduled', [id], function () { applyScheduledLocal('deleteScheduled', [id]); }, 'ลบรายการล่วงหน้า')
+    .then(function () { closeModal('schedModal'); renderScheduledList(); showToast('ลบแล้ว'); });
+}
+
 // ===================== หน้าหลัก: เงินที่เหลือในกระเป๋าแต่ละใบ =====================
 // เงินซื้อความสุข = ผลรวมของบัญชีเหล่านี้ (ชื่อต้องตรงกับชื่อสินทรัพย์ในแอป)
 var HAPPY_ACCOUNTS = ['เงินสด', 'กรุงไทย', 'กสิกรไทย', 'True money'];
@@ -1277,6 +1413,7 @@ function setTxDate(str) {
   $('txDateBtn').title = thaiDateLabel(str);
   $('txDatePicker').hidden = true;
   $('txDateBtn').classList.remove('open');
+  updateScheduleHint();
 }
 
 function toggleDatePicker() {
@@ -1724,6 +1861,7 @@ var MORE_MENU = [
   { label: 'หมวดหมู่', icon: 'categories', page: 'categories' },
   { label: 'บัญชี', icon: 'accounts', tab: 'assets' },
   { label: 'โอนเงิน', icon: 'transfer', action: function () { openTxModal(null); setTxType('transfer'); applyLastAccounts('transfer'); renderTxPickers(); } },
+  { label: 'ล่วงหน้า', icon: 'schedule', page: 'scheduled' },
   { label: 'จัดการกลุ่ม', icon: 'groups', action: function () { renderGroupsManageUI(); openModal('groupsModal'); } },
   { label: 'การวิเคราะห์', icon: 'analysis', tab: 'analysis' },
   { label: 'ธีมสี', icon: 'theme', page: 'theme' },
@@ -1756,6 +1894,7 @@ function openMorePage(name) {
   $('moreHello').hidden = !!name;
   document.querySelectorAll('.more-page').forEach(function (p) { p.hidden = p.dataset.page !== name; });
   if (name === 'sync') renderConnInfo();
+  if (name === 'scheduled') renderScheduledList();
   if (name === 'settings') {
     $('hapticsToggle').checked = prefOn(HAPTICS_KEY);
     $('mascotToggle').checked = prefOn(MASCOT_KEY);
@@ -2233,6 +2372,9 @@ function openTxModal(edit, opts) {
   $('txModalTitle').textContent = txEdit ? 'แก้ไขรายการ' : 'เพิ่มรายการ';
   $('saveTxBtn').textContent = 'บันทึก';
   $('deleteTxBtn').hidden = !txEdit;
+  state.txRepeat = 'once';
+  setRepeatSeg('txRepeatSeg', 'once');
+  $('txRepeatRow').hidden = !!txEdit;
 
   if (txEdit) {
     var it = txEdit.item;
@@ -2305,6 +2447,34 @@ function saveTransaction() {
       txEdit = null;
       closeModal('txModal');
       showToast(isOnline() ? 'แก้ไขรายการแล้ว' : 'แก้ไขในเครื่องแล้ว จะซิงก์ให้เมื่อมีเน็ต');
+    }).then(release, release);
+    return;
+  }
+
+  var rep = state.txRepeat || 'once';
+  var isFuture = tx.dateStr > todayStr();
+  if (rep !== 'once' || isFuture) {
+    saveLastTx(tx);
+    var sched = {
+      id: 's-' + newUid(), type: tx.type, account: tx.account, toAccount: tx.toAccount || '',
+      category: tx.category, amount: tx.amount, note: tx.note || '', repeat: rep, active: true,
+      anchorDay: d.getDate(),
+      nextDate: isFuture ? tx.dateStr : scheduleNextAfter(tx.dateStr, rep, d.getDate())
+    };
+    var label = (tx.type === 'transfer' ? 'โอน ' + tx.account + ' → ' + tx.toAccount : tx.category);
+    var p = performWrite('addScheduled', [sched], function () { applyScheduledLocal('addScheduled', [sched]); }, 'ตั้งล่วงหน้า ' + label);
+    if (!isFuture) {
+      // วันแรกเป็นวันนี้/ย้อนหลัง → บันทึกรอบแรกเลย แล้วรอบถัดไปค่อยอัตโนมัติ
+      state.year = d.getFullYear(); state.monthIndex = d.getMonth();
+      p = p.then(function () {
+        return performWrite('addTransaction', [txForSheet(tx)], function () { addTransactionLocal(tx); }, 'บันทึก ' + label);
+      });
+    }
+    p.then(function () {
+      closeModal('txModal');
+      showToast(isFuture
+        ? '⏰ ตั้งไว้แล้ว จะบันทึกให้วันที่ ' + thaiDateLabel(sched.nextDate)
+        : '🔁 บันทึกแล้ว รอบถัดไป ' + thaiDateLabel(sched.nextDate));
     }).then(release, release);
     return;
   }
@@ -2691,6 +2861,23 @@ function bindEvents() {
   on('syncBtn', 'click', function () { fullSync({ notify: true }); });
   on('forceSyncBtn', 'click', function () { fullSync({ notify: true }); });
   on('resetConnectionBtn', 'click', resetConnection);
+  on('txRepeatSeg', 'click', function (e) {
+    var b = e.target.closest('button[data-rep]'); if (!b) return;
+    state.txRepeat = b.dataset.rep; setRepeatSeg('txRepeatSeg', state.txRepeat); updateScheduleHint();
+  });
+  on('schedRepeatSeg', 'click', function (e) {
+    var b = e.target.closest('button[data-rep]'); if (!b) return;
+    setRepeatSeg('schedRepeatSeg', b.dataset.rep);
+  });
+  on('closeSchedModalBtn', 'click', function () { closeModal('schedModal'); });
+  on('saveSchedBtn', 'click', saveSchedModal);
+  on('deleteSchedBtn', 'click', deleteSchedModal);
+  on('addScheduledBtn', 'click', function () {
+    var t = new Date(); t.setDate(t.getDate() + 1);
+    openTxModal(null);
+    setTxDate(toDateStr(t));
+    state.txRepeat = 'monthly'; setRepeatSeg('txRepeatSeg', 'monthly'); updateScheduleHint();
+  });
   on('copyConnUrlBtn', 'click', function () { var c = loadConnection(); if (c) copyText(c.url, 'ลิงก์'); });
   on('copyConnTokenBtn', 'click', function () { var c = loadConnection(); if (c) copyText(c.token, 'โทเค็น'); });
 
@@ -2885,8 +3072,10 @@ function loadFromLocal() {
     kvGet('assetsOverview'),
     kvGet('lastSync'),
     idbRun('months', 'readonly', function (s) { return s.getAll(); }),
-    refreshOutboxCount()
+    refreshOutboxCount(),
+    kvGet('scheduled')
   ]).then(function (res) {
+    if (res[5]) state.scheduled = res[5];
     if (res[0]) state.categories = res[0];
     if (res[1]) state.assetsOverview = res[1];
     if (res[2]) state.lastSync = res[2];
