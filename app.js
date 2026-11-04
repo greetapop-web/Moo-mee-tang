@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-11-04-pwa-32';
+var APP_VERSION = '2026-11-04-pwa-33';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -1295,7 +1295,7 @@ function renderHome() {
           showToast('รายการนี้ยังรอซิงก์อยู่ ลบได้หลังซิงก์ขึ้นชีตแล้ว');
           return;
         }
-        confirmDeleteTx(item);
+        confirmDeleteTx(item, { dateStr: day.key });
       });
       row.addEventListener('click', function () {
         if (item.pending) {
@@ -1479,19 +1479,22 @@ function txForSheet(tx) {
   return c;
 }
 
-function expectedOf(item) {
-  return { key: item.key || '', type: item.type, category: item.category, amount: item.amount };
+function expectedOf(item, dateStr) {
+  return { key: item.key || '', type: item.type, category: item.category, amount: item.amount,
+    account: item.account || '', dateStr: dateStr || item.dateStr || '' };
 }
 
-function confirmDeleteTx(item) {
+function confirmDeleteTx(item, where) {
   if (!confirm('ลบรายการนี้หรือไม่?')) return Promise.resolve(false);
+  // where = { sheetName, monthKey, dateStr } ของเดือนที่รายการอยู่จริง (เช่นเปิดจากหน้าประวัติเดือนอื่น)
   var month = currentMonth();
-  if (!month) return;
-  var key = monthKey(state.year, state.monthIndex);
+  var sheetName = (where && where.sheetName) || (month && month.sheetName);
+  if (!sheetName) return Promise.resolve(false);
+  var key = (where && where.monthKey) || monthKey(state.year, state.monthIndex);
 
   return performWrite(
     'deleteTransaction',
-    [month.sheetName, item.rowIndex, expectedOf(item)],
+    [sheetName, item.rowIndex, expectedOf(item, where && where.dateStr)],
     function () { deleteTransactionLocal(key, item.rowIndex); },
     'ลบรายการ ' + item.category
   ).then(function () { showToast('ลบรายการแล้ว'); return true; });
@@ -2440,7 +2443,7 @@ function saveTransaction() {
     saveLastTx(tx);
     state.year = d.getFullYear();
     state.monthIndex = d.getMonth();
-    performWrite('updateTransaction', [ed.sheetName, ed.item.rowIndex, expectedOf(ed.item), txForSheet(tx)], function () {
+    performWrite('updateTransaction', [ed.sheetName, ed.item.rowIndex, expectedOf(ed.item, ed.dateStr), txForSheet(tx)], function () {
       deleteTransactionLocal(ed.monthKey, ed.item.rowIndex);
       addTransactionLocal(tx);
     }, 'แก้ไข ' + ed.item.category).then(function () {
@@ -2891,7 +2894,7 @@ function bindEvents() {
   on('txNote', 'keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
   on('deleteTxBtn', 'click', function () {
     if (!txEdit) return;
-    confirmDeleteTx(txEdit.item).then(function (done) {
+    confirmDeleteTx(txEdit.item, { sheetName: txEdit.sheetName, monthKey: txEdit.monthKey, dateStr: txEdit.dateStr }).then(function (done) {
       if (done) { txEdit = null; closeModal('txModal'); }
     });
   });
