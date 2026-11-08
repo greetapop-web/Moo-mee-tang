@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-11-04-pwa-33';
+var APP_VERSION = '2026-11-08-pwa-34';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -2257,8 +2257,17 @@ function renderTxCatGrid() {
     b.addEventListener('click', function () {
       sel.value = b.dataset.v;
       renderTxCatGrid();
+      setPadCollapsed(false);   // เลือกหมวดแล้ว ขั้นต่อไปคือใส่จำนวนเงิน
     });
   });
+}
+
+/** ย่อ/ขยายแป้นตัวเลข — ย่อแล้วจะเห็นหมวด/บัญชีด้านบนได้เต็ม ๆ */
+function setPadCollapsed(on) {
+  var p = $('txPanel');
+  if (!p) return;
+  p.classList.toggle('pad-collapsed', !!on);
+  $('padToggleText').textContent = on ? 'แสดงแป้นตัวเลข' : 'ซ่อนแป้นตัวเลข';
 }
 
 function renderTxAccounts() {
@@ -2375,6 +2384,7 @@ function openTxModal(edit, opts) {
   $('txModalTitle').textContent = txEdit ? 'แก้ไขรายการ' : 'เพิ่มรายการ';
   $('saveTxBtn').textContent = 'บันทึก';
   $('deleteTxBtn').hidden = !txEdit;
+  setPadCollapsed(false);
   state.txRepeat = 'once';
   setRepeatSeg('txRepeatSeg', 'once');
   $('txRepeatRow').hidden = !!txEdit;
@@ -2899,6 +2909,18 @@ function bindEvents() {
     });
   });
   on('closeModalBtn', 'click', function () { closeModal('txModal'); });
+  on('padToggle', 'click', function () { setPadCollapsed(!$('txPanel').classList.contains('pad-collapsed')); });
+  on('txAmount', 'focus', function () { setPadCollapsed(false); });
+  document.querySelector('#txPanel .amount-box').addEventListener('click', function () { setPadCollapsed(false); });
+  // เลื่อนดูหมวด/บัญชีด้านบน = ย่อแป้นตัวเลขให้อัตโนมัติ
+  (function () {
+    var mid = $('txMiddle'), y0 = null;
+    mid.addEventListener('touchstart', function (e) { y0 = e.touches[0].clientY; }, { passive: true });
+    mid.addEventListener('touchmove', function (e) {
+      if (y0 !== null && Math.abs(e.touches[0].clientY - y0) > 12) { setPadCollapsed(true); y0 = null; }
+    }, { passive: true });
+    mid.addEventListener('wheel', function () { setPadCollapsed(true); }, { passive: true });
+  })();
   on('saveTxBtn', 'click', saveTransaction);
   on('receiptInput', 'change', handleReceiptUpload);
 

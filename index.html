@@ -265,7 +265,8 @@
       </div>
 
       <!-- แผงด้านล่าง: บัญชี + บันทึก + จำนวนเงิน + เครื่องคิดเลข -->
-      <div class="tx-panel">
+      <div class="tx-panel" id="txPanel">
+        <button type="button" id="padToggle" class="pad-toggle" aria-label="ซ่อน/แสดงแป้นตัวเลข"><span class="pad-grip"></span><span id="padToggleText">ซ่อนแป้นตัวเลข</span></button>
         <div class="tx-panel-row">
           <button type="button" id="txAccountBtn" class="acct-chip" aria-label="เลือกบัญชี"></button>
           <span id="txAccountLabel" class="sr-only">บัญชี/สินทรัพย์</span>

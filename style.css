@@ -853,3 +853,23 @@ button,input,label,.tx-row,.asset-main,.cat-tile{touch-action:manipulation;}
   color:var(--red);background:color-mix(in srgb, var(--red) 13%, transparent);}
 .sched-row .tx-cat.income, .sched-summary .tx-cat.income{color:var(--green);background:color-mix(in srgb, var(--green) 14%, transparent);}
 .sched-row .tx-cat.transfer, .sched-summary .tx-cat.transfer{color:var(--transfer);background:color-mix(in srgb, var(--transfer) 14%, transparent);}
+
+/* ===== v34: แผงตัวเลขเล็กลง + ย่อเก็บได้ ไม่บังหมวด/บัญชีด้านบน ===== */
+.tx-panel{padding-top:4px;}
+.pad-toggle{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;background:none;border:none;
+  color:var(--text-secondary);font:inherit;font-size:11px;padding:2px 0 6px;cursor:pointer;}
+.pad-grip{width:40px;height:4px;border-radius:2px;background:var(--border);display:block;}
+.tx-panel .tx-panel-row{margin-bottom:6px;}
+.tx-panel .amount-box{padding:2px 12px 4px;}
+.modal #txAmount{font-size:26px;}
+.tx-panel .calc-preview{font-size:12px;min-height:0;}
+.note-box{min-height:42px;margin-bottom:6px;}
+.modal .note-box input.tx-note{padding:9px 0;}
+.repeat-row{margin-bottom:6px;}
+.repeat-seg button{padding:5px 4px;font-size:12.5px;}
+.tx-panel .calc-pad{gap:6px;}
+.tx-panel .calc-pad button,.tx-panel .calc-pad .k-receipt{height:44px;}
+.tx-panel .calc-pad .k-save{font-size:20px;}
+.tx-panel.pad-collapsed .calc-pad > button[data-k]:not(.k-eq){display:none;}
+.acct-card{padding:10px 12px;}
+.transfer-cards .transfer-arrow{font-size:18px;line-height:1;}
