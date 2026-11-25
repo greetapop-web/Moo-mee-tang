@@ -8,7 +8,7 @@
  *  4. หลังส่งคิวสำเร็จ จะดึงข้อมูลจริงจากชีตมาทับ เพื่อให้ตัวเลขตรงกับชีตเสมอ (ชีตคือความจริง)
  */
 
-var APP_VERSION = '2026-11-08-pwa-34';
+var APP_VERSION = '2026-11-25-pwa-35';
 
 // ค่าทั่วไปจาก config.js (ไม่มีความลับ) + ลิงก์/โทเค็นที่โหลดจากเครื่องตอนเริ่มระบบ
 var CONFIG = window.MOO_MEE_TANG_CONFIG || {};
@@ -547,8 +547,38 @@ function apiPost(body) {
 // ===================== เครื่องมือซิงก์ =====================
 
 /** ดึงข้อมูลทั้งหมดจากชีตมาทับสำเนาในเครื่อง */
-function syncFromServer() {
-  return apiGet('bootstrap', { monthsBack: CONFIG.MONTHS_TO_CACHE || 2 }).then(applyBootstrap);
+function syncFromServer(monthsBack) {
+  if (monthsBack === undefined) monthsBack = CONFIG.MONTHS_TO_CACHE || 2;
+  return apiGet('bootstrap', { monthsBack: monthsBack }).then(applyBootstrap);
+}
+
+// ===================== ซิงก์ไว: เช็ก "เลขเวอร์ชันข้อมูล" ก่อน =====================
+// เซิร์ฟเวอร์ขยับเลขเวอร์ชันทุกครั้งที่มีการบันทึก (จากแอปนี้ จากตังค์กัน หรือรายการล่วงหน้า)
+// เช็กเลขนี้เร็วมาก (ไม่ต้องเปิดชีต) — ถ้าไม่มีอะไรเปลี่ยน ก็ไม่ต้องดึงข้อมูลทั้งก้อนมาใหม่
+var FULL_SYNC_EVERY_MS = 15 * 60 * 1000;   // อย่างน้อยดึงข้อมูลเต็มทุก 15 นาที (เผื่อมีคนแก้ในชีตตรง ๆ)
+var CHECK_EVERY_MS = 30 * 1000;            // ระหว่างเปิดแอปอยู่ เช็กทุก 30 วินาที
+
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+function checkForChanges() {
+  if (!CONFIG.API_URL || !CONFIG.API_TOKEN || !isOnline() || state.syncing) return Promise.resolve();
+  if (state.outboxCount) return fullSync({ quick: true });
+  var lastFull = Number(lsGet('mmt-last-full') || 0);
+  if (Date.now() - lastFull > FULL_SYNC_EVERY_MS || !state.dataVersion) return fullSync();
+  state.checking = true;
+  return apiGet('version').then(function (d) {
+    state.checking = false;
+    var v = d && d.version ? String(d.version) : '';
+    if (!v) return fullSync({ quick: true });           // เซิร์ฟเวอร์รุ่นเก่า ยังไม่รู้จักคำสั่งนี้
+    if (v !== state.dataVersion) return fullSync({ quick: true });
+    state.lastSync = new Date().toISOString();           // ไม่มีอะไรเปลี่ยน = ข้อมูลในเครื่องสดอยู่แล้ว
+    state.lastError = null;
+    renderSyncStatus();
+  }).catch(function () {
+    state.checking = false;
+    return fullSync({ quick: true });
+  });
 }
 
 /** เอาชุดข้อมูลจากชีตมาทับสำเนาในเครื่อง (ใช้ทั้งจาก GET bootstrap และจากคำตอบของ POST แบบซิงก์เร็ว) */
@@ -558,6 +588,8 @@ function applyBootstrap(data) {
       state.categories = data.categories || { income: [], expense: [] };
       state.assetsOverview = data.assetsOverview || { total: 0, groups: [] };
       if (data.scheduled) state.scheduled = data.scheduled;
+      if (data.dataVersion) { state.dataVersion = String(data.dataVersion); lsSet('mmt-data-ver', state.dataVersion); }
+      lsSet('mmt-last-full', String(Date.now()));
       if (data.scheduledRecorded) {
         setTimeout(function () { showToast('⏰ บันทึกรายการล่วงหน้าให้แล้ว ' + data.scheduledRecorded + ' รายการ'); }, 400);
       }
@@ -672,7 +704,7 @@ function fullSync(options) {
     .then(function (res) {
       // เซิร์ฟเวอร์รุ่นเก่ายังไม่แนบข้อมูลกลับมา → ดึงแยกแบบเดิม
       if (res && res.bootstrap) return applyBootstrap(res.bootstrap);
-      return syncFromServer();
+      return syncFromServer(monthsBack);
     })
     .then(function () { return refreshOutboxCount(); })
     .then(function () {
@@ -3085,8 +3117,12 @@ function bindEvents() {
 
   // กลับมาเปิดแอปอีกครั้ง (สลับจากแอปอื่น) ก็ซิงก์ให้สดเสมอ
   document.addEventListener('visibilitychange', function () {
-    if (!document.hidden && isOnline()) fullSync();
+    if (!document.hidden && isOnline()) checkForChanges();
   });
+  // เปิดแอปค้างไว้ = เช็กของใหม่ (เช่นจากตังค์กัน) ให้เองเป็นระยะ
+  setInterval(function () {
+    if (!document.hidden && isOnline() && !state.syncing && !state.checking) checkForChanges();
+  }, CHECK_EVERY_MS);
 }
 
 // ===================== เริ่มระบบ =====================
@@ -3211,7 +3247,8 @@ function init() {
       // แสดงข้อมูลที่มีในเครื่องทันที (ไม่ต้องรอเน็ต) แล้วค่อยซิงก์เบื้องหลัง
       renderSyncStatus();
       renderCurrentTab();
-      if (isOnline()) fullSync();
+      state.dataVersion = lsGet('mmt-data-ver') || '';
+      if (isOnline()) checkForChanges();
     })
     .catch(function (err) {
       console.error('init failed', err);
